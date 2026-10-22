@@ -1,0 +1,326 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f6f4ee;
+  --color-paper-deep: #efece3;
+  --color-card: #fffefb;
+  --color-ink: #101828;
+  --color-body: #3b4453;
+  --color-muted: #6b7280;
+  --color-line: #e3dfd4;
+  --color-brand: #0e6b5e;
+  --color-brand-dark: #0a5148;
+  --color-brand-soft: #e8f3ef;
+  --color-amber: #b45309;
+  --color-amber-soft: #fdf3e3;
+  --color-danger: #b42318;
+  --color-danger-soft: #fef3f2;
+  --color-blue: #1d4ed8;
+  --color-blue-soft: #eff4ff;
+
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --font-mono: "SFMono-Regular", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: #c8e6dc;
+  color: #0a3b34;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+.page-shell {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.card-pad {
+  padding: 22px;
+}
+
+.card-dark {
+  background: #0f2b26;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: #dbe9e4;
+  box-shadow: 0 18px 40px rgba(9, 26, 22, 0.18);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 120ms ease;
+  white-space: nowrap;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary {
+  background: var(--color-brand);
+  color: #ffffff;
+  border-color: var(--color-brand);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-brand-dark);
+  border-color: var(--color-brand-dark);
+}
+
+.btn-outline {
+  background: transparent;
+  border-color: var(--color-line);
+  color: var(--color-ink);
+}
+
+.btn-outline:hover:not(:disabled) {
+  border-color: #c8c2b4;
+  background: #fbfaf6;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-body);
+  padding: 8px 10px;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(16, 24, 40, 0.05);
+}
+
+.btn-danger {
+  background: transparent;
+  border-color: #f1c8c3;
+  color: var(--color-danger);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--color-danger-soft);
+}
+
+.btn-sm {
+  padding: 7px 11px;
+  font-size: 12.5px;
+  border-radius: 8px;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  border: 1px solid var(--color-line);
+  background: #fffefb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--color-ink);
+  font-family: inherit;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgba(14, 107, 94, 0.12);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: #9aa1ab;
+}
+
+.textarea {
+  min-height: 110px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-body);
+  margin-bottom: 6px;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.badge-brand {
+  background: var(--color-brand-soft);
+  color: var(--color-brand-dark);
+}
+
+.badge-neutral {
+  background: #f1efe9;
+  color: #57534e;
+}
+
+.badge-amber {
+  background: var(--color-amber-soft);
+  color: var(--color-amber);
+}
+
+.badge-danger {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.badge-blue {
+  background: var(--color-blue-soft);
+  color: var(--color-blue);
+}
+
+.sev-high {
+  border-left: 3px solid var(--color-danger);
+}
+
+.sev-medium {
+  border-left: 3px solid var(--color-amber);
+}
+
+.sev-low {
+  border-left: 3px solid var(--color-blue);
+}
+
+.sev-info {
+  border-left: 3px solid #94a3b8;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+}
+
+.nav-link {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--color-body);
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.nav-link:hover {
+  background: rgba(16, 24, 40, 0.05);
+  color: var(--color-ink);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.grid-hero {
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(14, 107, 94, 0.35), transparent 45%),
+    radial-gradient(circle at 85% 10%, rgba(180, 83, 9, 0.18), transparent 40%),
+    linear-gradient(transparent 95%, rgba(255, 255, 255, 0.05) 95%),
+    linear-gradient(90deg, transparent 95%, rgba(255, 255, 255, 0.05) 95%);
+  background-size: auto, auto, 28px 28px, 28px 28px;
+}
+
+.fade-in {
+  animation: fade-in 320ms ease both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .fade-in {
+    animation: none;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
