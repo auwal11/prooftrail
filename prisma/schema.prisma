@@ -1,0 +1,202 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ServiceType {
+  AIRTIME
+  DATA
+  OTHER
+}
+
+enum CaseStatus {
+  DRAFT
+  EVIDENCE_REVIEW
+  READY
+  CLOSED
+}
+
+enum EvidenceKind {
+  IMAGE
+  PDF
+  TEXT
+}
+
+enum ExtractionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  UNSUPPORTED
+}
+
+enum FactType {
+  AMOUNT
+  DATE
+  REFERENCE
+  PHONE
+  STATUS
+  SERVICE_TYPE
+  PROVIDER
+  RECIPIENT
+  ACCOUNT_MASK
+  DESCRIPTION
+}
+
+enum RevisionAction {
+  CORRECT
+  REJECT
+  RESTORE
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  sessions  Session[]
+  cases     Case[]
+  revisions FactRevision[]
+  uploads   Evidence[]     @relation("EvidenceUploader")
+  reports   Report[]
+  events    CaseEvent[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Case {
+  id                   String      @id @default(cuid())
+  userId               String
+  title                String
+  serviceType          ServiceType @default(AIRTIME)
+  provider             String?
+  claimedAmount        Decimal?    @db.Decimal(14, 2)
+  currency             String      @default("NGN")
+  incidentDate         DateTime?
+  transactionReference String?
+  customerPhone        String?
+  description          String?
+  status               CaseStatus  @default(DRAFT)
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  evidence Evidence[]
+  facts    Fact[]
+  events   CaseEvent[]
+  reports  Report[]
+
+  @@index([userId, createdAt])
+}
+
+model Evidence {
+  id               String           @id @default(cuid())
+  caseId           String
+  uploadedById     String
+  originalName     String
+  storedName       String
+  mimeType         String
+  sizeBytes        Int
+  sha256           String
+  kind             EvidenceKind
+  extractionStatus ExtractionStatus @default(PENDING)
+  extractionError  String?
+  extractionNotes  String?
+  extractedText    String?
+  pageCount        Int?
+  createdAt        DateTime         @default(now())
+
+  case      Case   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  uploader  User   @relation("EvidenceUploader", fields: [uploadedById], references: [id])
+  facts     Fact[]
+
+  @@index([caseId, createdAt])
+  @@index([sha256])
+}
+
+model Fact {
+  id              String   @id @default(cuid())
+  evidenceId      String
+  caseId          String
+  type            FactType
+  rawValue        String
+  normalizedValue String?
+  confidence      Float    @default(0.5)
+  locator         Json?
+  snippet         String?
+  extractor       String
+  extractorVersion String
+  createdAt       DateTime @default(now())
+
+  evidence  Evidence       @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  case      Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  revisions FactRevision[]
+
+  @@index([caseId, type])
+  @@index([evidenceId])
+}
+
+model FactRevision {
+  id            String         @id @default(cuid())
+  factId        String
+  caseId        String
+  actorId       String
+  action        RevisionAction
+  previousValue String?
+  newValue      String?
+  note          String?
+  createdAt     DateTime       @default(now())
+
+  fact  Fact @relation(fields: [factId], references: [id], onDelete: Cascade)
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@index([factId, createdAt])
+  @@index([caseId, createdAt])
+}
+
+model CaseEvent {
+  id        String   @id @default(cuid())
+  caseId    String
+  actorId   String?
+  type      String
+  summary   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  case  Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([caseId, createdAt])
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  caseId      String
+  createdById String
+  storedName  String
+  sha256      String
+  sizeBytes   Int
+  createdAt   DateTime @default(now())
+
+  case      Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([caseId, createdAt])
+}
