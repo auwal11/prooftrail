@@ -206,7 +206,7 @@ export default async function CasePage({ params }: PageProps) {
         </div>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <section id="evidence" className="card card-pad scroll-mt-24">
               <SectionHeading
                 eyebrow="Step 1"
@@ -342,7 +342,7 @@ export default async function CasePage({ params }: PageProps) {
             </section>
           </div>
 
-          <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
+          <aside className="min-w-0 space-y-5 lg:sticky lg:top-6 lg:self-start">
             <section id="report" className="card card-pad scroll-mt-24">
               <SectionHeading eyebrow="Step 5" title="Case report" />
               <ReportPanel

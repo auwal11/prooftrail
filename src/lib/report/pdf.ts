@@ -394,9 +394,9 @@ class ReportLayout {
   findingCard(finding: Finding, index: number, evidenceNames: Map<string, string>): void {
     this.space(110);
 
-    const titleLines = this.wrap(`${index + 1}. ${finding.title}`, 10.2, this.bold, CONTENT_WIDTH - 80);
-    const explanationLines = this.wrap(finding.explanation, 8.8, this.regular, CONTENT_WIDTH - 2);
-    const recommendationLines = this.wrap(`Next step: ${finding.recommendation}`, 8.8, this.regular, CONTENT_WIDTH - 2);
+    const titleLines = this.wrap(`${index + 1}. ${finding.title}`, 10.2, this.bold, CONTENT_WIDTH - 22);
+    const explanationLines = this.wrap(finding.explanation, 8.8, this.regular, CONTENT_WIDTH - 22);
+    const recommendationLines = this.wrap(`Next step: ${finding.recommendation}`, 8.8, this.regular, CONTENT_WIDTH - 22);
     const sources = [
       ...new Set(
         finding.evidenceIds
@@ -405,10 +405,10 @@ class ReportLayout {
       ),
     ];
     const sourceLine = sources.length > 0 ? `Sources: ${sources.join(", ")}` : "Sources: case metadata";
-    const sourceLines = this.wrap(sourceLine, 8, this.regular, CONTENT_WIDTH - 2);
+    const sourceLines = this.wrap(sourceLine, 8, this.regular, CONTENT_WIDTH - 22);
 
     const height =
-      10 + titleLines.length * 13 + 6 + explanationLines.length * 12 + 6 + recommendationLines.length * 12 + 6 + sourceLines.length * 11 + 12;
+      24 + titleLines.length * 13 + 6 + explanationLines.length * 12 + 6 + recommendationLines.length * 12 + 6 + sourceLines.length * 11 + 12;
 
     if (this.y - height < BOTTOM) this.newPage();
 
@@ -432,7 +432,7 @@ class ReportLayout {
 
     this.severityBadge(finding.severity, MARGIN + 10, top - 11);
 
-    let y = top - 12;
+    let y = top - 24;
     for (const line of titleLines) {
       this.page.drawText(line, {
         x: MARGIN + 10,
