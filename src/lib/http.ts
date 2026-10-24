@@ -20,22 +20,34 @@ export async function requireUser(): Promise<SessionUser> {
   return user;
 }
 
+function forwardedOrigins(request: Request): string[] {
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  if (!host) return [];
+  const proto = request.headers.get("x-forwarded-proto") ?? "https";
+  const origins = new Set<string>();
+  for (const scheme of new Set([proto, "https", "http"])) {
+    origins.add(`${scheme}://${host}`.toLowerCase());
+  }
+  return [...origins];
+}
+
 export function assertSameOrigin(request: Request): void {
   const origin = request.headers.get("origin");
   if (!origin) return;
 
-  const expected = new URL(request.url).origin;
+  const allowed = new Set<string>();
+  const origins = [new URL(request.url).origin, ...forwardedOrigins(request)];
   const configured = process.env.APP_URL;
-  const allowed = new Set([expected]);
   if (configured) {
     try {
-      allowed.add(new URL(configured).origin);
+      origins.push(new URL(configured).origin);
     } catch {
-      // Ignore malformed APP_URL; same-origin check still applies.
+      // Ignore malformed APP_URL; the request and forwarded origins still apply.
     }
   }
+  for (const candidate of origins) allowed.add(candidate.toLowerCase());
 
-  if (!allowed.has(origin)) {
+  if (!allowed.has(origin.toLowerCase())) {
     throw new ApiError(403, "Cross-origin request rejected.", "origin_rejected");
   }
 }
