@@ -1,6 +1,6 @@
 # ProofTrail — Progress Log
 
-Last updated: 2026-10-22 (WAT)
+Last updated: 2026-10-24 (WAT)
 
 ## Current status
 
@@ -54,6 +54,7 @@ The MVP is implemented end-to-end and runs locally against PostgreSQL. Registrat
 - Case label standardised as `PT-` plus the last six characters of the case ID.
 - Correct English article handling ("an airtime dispute").
 - Duplicate source names removed.
+- Finding cards place the severity badge above the title with a clear gap, and all body/source text is wrapped to the card inner width.
 - Report files stored privately, hashed, and downloadable only by the owner.
 
 ### UI
@@ -64,6 +65,7 @@ The MVP is implemented end-to-end and runs locally against PostgreSQL. Registrat
 - Case workspace with evidence uploader, evidence cards, findings, fact review with filters and history, timeline, report panel, case details, activity log, and destructive actions.
 - Responsive styling with Tailwind v4.
 - Fixed the dark "Honest boundaries" panel by replacing a conflicting `.card` class with `.card-dark`.
+- Fixed 4 px horizontal overflow on the case workspace at narrow widths by adding `min-w-0` to the main content and sticky sidebar grid children.
 
 ### Verification
 
@@ -83,6 +85,9 @@ The MVP is implemented end-to-end and runs locally against PostgreSQL. Registrat
   - Case closed, reopened, and deleted.
   - Logout and middleware redirect confirmed.
   - Timeline order and wall-clock times verified after the timezone fix.
+  - Mobile QA at 500 px: landing, dashboard, case summary, findings, facts, and report panel checked with no horizontal overflow.
+  - Desktop QA at 1440 px: sticky sidebar and dense case workspace checked.
+  - Report pages 4–5 checked in the PDF viewer; badge, title, body, source, timeline, correction-log, and hash-table layouts are all inside the page margins.
 - Timezone bug fixed: naive extracted dates are interpreted as UTC so `12:34` renders as `12:34`, not `11:34`.
 - Report issues fixed: case label, grammar, duplicate sources, action column wrapping, timeline grouping.
 - Demo database reset to a clean state after QA: 1 case, 3 files, 30 facts, 4 findings.
@@ -99,16 +104,13 @@ The MVP is implemented end-to-end and runs locally against PostgreSQL. Registrat
 ## Blockers
 
 - **Deployment platform and credentials are unknown.** No target platform, account, or deployment token has been provided. Local production build and run are verified; deployment remains pending.
-- **Landing-page screenshot QA is intermittent.** The browser automation screenshot call times out even though the page loads and DOM inspection works. The CSS fix is in place and can be rechecked manually.
-- **Mobile viewport QA not yet completed.** Requires a stable browser screenshot session.
 
 ## Next priorities
 
-1. Complete visual QA at desktop and mobile widths; confirm the dark landing panel and case-page density.
-2. Add a Dockerfile and deployment recipe once the target platform is known.
-3. Commit the work in logical increments and push to `main`.
-4. Add a small end-to-end smoke test around the API if time allows.
-5. Reseed and perform a final submission walkthrough before the deadline.
+1. Add a Dockerfile and deployment recipe once the target platform is known.
+2. Add a small end-to-end smoke test around the API if time allows.
+3. Reseed and perform a final submission walkthrough before the deadline.
+4. Re-run `npm run verify` after the final content changes and push the updated documentation.
 
 ## Submission checklist
 
