@@ -121,6 +121,7 @@ export async function POST(request: Request, context: RouteContext) {
         sha256: hash,
         kind: sniffed.kind,
         extractionStatus: "PENDING",
+        data: new Uint8Array(buffer),
       },
       select: { id: true, originalName: true },
     });

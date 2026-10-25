@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { ApiError, jsonError, requireUser } from "@/lib/http";
-import { readStoredFile } from "@/lib/storage";
+import { readStoredBytes } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
@@ -17,13 +17,14 @@ export async function GET(_request: Request, context: RouteContext) {
       select: {
         storedName: true,
         sha256: true,
+        data: true,
         createdAt: true,
         case: { select: { id: true, title: true } },
       },
     });
     if (!report) throw new ApiError(404, "Report not found.", "not_found");
 
-    const buffer = await readStoredFile("reports", report.storedName);
+    const buffer = await readStoredBytes(report.data, "reports", report.storedName);
     const date = report.createdAt.toISOString().slice(0, 10);
     const safeTitle = report.case.title.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "case";
     const filename = `ProofTrail-${safeTitle}-${date}.pdf`;

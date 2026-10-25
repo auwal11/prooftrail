@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { ApiError, jsonError, requireUser } from "@/lib/http";
-import { readStoredFile } from "@/lib/storage";
+import { readStoredBytes } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
@@ -19,11 +19,12 @@ export async function GET(_request: Request, context: RouteContext) {
         originalName: true,
         mimeType: true,
         kind: true,
+        data: true,
       },
     });
     if (!evidence) throw new ApiError(404, "Evidence not found.", "not_found");
 
-    const buffer = await readStoredFile("evidence", evidence.storedName);
+    const buffer = await readStoredBytes(evidence.data, "evidence", evidence.storedName);
     const disposition = evidence.kind === "IMAGE" ? "inline" : "attachment";
     const encodedName = encodeURIComponent(evidence.originalName);
 
