@@ -4,7 +4,7 @@ Last updated: 2026-10-24 (WAT)
 
 ## Current status
 
-The MVP is implemented end-to-end and runs locally against PostgreSQL. Registration, authentication, case management, private evidence upload, PDF/OCR/text extraction, source-linked facts, deterministic findings, fact review, timeline, PDF reporting, case closure, and deletion all work in the browser. Typecheck, lint, unit tests, and production build pass.
+The MVP is implemented end-to-end, runs locally against PostgreSQL, and is deployed at <https://prooftrail.rumptycloud.app>. Registration, authentication, case management, private evidence upload, PDF/OCR/text extraction, source-linked facts, deterministic findings, fact review, timeline, PDF reporting, case closure, and deletion all work in the browser. Typecheck, lint, unit tests, and production build pass.
 
 ## Completed
 
@@ -66,6 +66,8 @@ The MVP is implemented end-to-end and runs locally against PostgreSQL. Registrat
 - Responsive styling with Tailwind v4.
 - Fixed the dark "Honest boundaries" panel by replacing a conflicting `.card` class with `.card-dark`.
 - Fixed 4 px horizontal overflow on the case workspace at narrow widths by adding `min-w-0` to the main content and sticky sidebar grid children.
+- Fixed production sign-in and registration: same-origin checks now accept the proxy-forwarded public host in addition to the request URL and `APP_URL`. Covered by `tests/origin.test.ts`.
+- Upgraded Next.js to 16.4.3, image-size to 2.0.4, tsx to 4.23.15, and pinned patched transitive versions (`deepmerge-ts` 8.0.2, `esbuild` 0.28.1, `postcss-selector-parser` 7.1.7). `npm audit` reports 0 vulnerabilities.
 
 ### Verification
 
@@ -100,16 +102,16 @@ The MVP is implemented end-to-end and runs locally against PostgreSQL. Registrat
 - `tests/effective.test.ts` — correction, reject, restore, date normalisation.
 - `tests/discrepancies.test.ts` — delivery/status findings, variances, duplicates, empty case, missing amount.
 - `tests/timeline.test.ts` — UTC wall-clock handling, duplicate grouping, rejected facts.
+- `tests/origin.test.ts` — same-origin checks for direct, proxy-forwarded, configured, rejected, and non-browser requests.
 
 ## Blockers
 
-- **Deployment platform and credentials are unknown.** No target platform, account, or deployment token has been provided. Local production build and run are verified; deployment remains pending.
 
 ## Next priorities
 
-1. Add a Dockerfile and deployment recipe once the target platform is known.
+1. Keep the RumptyCloud deployment healthy and rerun the live smoke test after each push.
 2. Add a small end-to-end smoke test around the API if time allows.
-3. Reseed and perform a final submission walkthrough before the deadline.
+3. Reseed the production demo case and perform a final submission walkthrough before the deadline.
 4. Re-run `npm run verify` after the final content changes and push the updated documentation.
 
 ## Submission checklist

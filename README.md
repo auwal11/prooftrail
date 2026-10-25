@@ -215,14 +215,16 @@ The suite covers:
 
 ## Deployment notes
 
+Live demo: <https://prooftrail.rumptycloud.app> (RumptyCloud, branch `main`, auto-deploy on push).
+
 1. Provision PostgreSQL and set `DATABASE_URL`.
-2. Run `npm run db:deploy`.
-3. Set `APP_URL` to the public HTTPS origin.
+2. Run `npm run db:deploy`, then optionally `npm run db:seed`.
+3. Set `APP_URL` to the public HTTPS origin. Behind a proxy the same-origin check also accepts the forwarded host, so a missing or localhost `APP_URL` does not break sign-in.
 4. Mount persistent private storage for `STORAGE_DIR`.
 5. Ensure `assets/tessdata/` is included in the deployment bundle.
 6. Run `npm run build` then `npm start`.
 
-Do not enable public access to `var/` or any storage directory.
+Do not enable public access to `var/` or any storage directory. The free deployment filesystem is ephemeral, so uploaded evidence and generated reports do not survive a redeploy unless `STORAGE_DIR` is mounted on persistent storage.
 
 ## Known limitations
 
