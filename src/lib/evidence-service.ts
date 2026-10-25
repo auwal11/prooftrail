@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { logCaseEvent } from "@/lib/audit";
 import { extractEvidence } from "@/lib/extract";
 import { extractFactsFromPages } from "@/lib/facts/parser";
-import { readStoredFile } from "@/lib/storage";
+import { readStoredBytes } from "@/lib/storage";
 
 const inFlight = new Set<string>();
 
@@ -27,6 +27,7 @@ export async function processEvidence(evidenceId: string): Promise<{
         storedName: true,
         originalName: true,
         extractionStatus: true,
+        data: true,
       },
     });
 
@@ -41,7 +42,7 @@ export async function processEvidence(evidenceId: string): Promise<{
 
     let buffer: Buffer;
     try {
-      buffer = await readStoredFile("evidence", evidence.storedName);
+      buffer = await readStoredBytes(evidence.data, "evidence", evidence.storedName);
     } catch {
       const message = "The stored file could not be read. Upload it again.";
       await markFailed(evidenceId, message);

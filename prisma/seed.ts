@@ -152,6 +152,7 @@ async function main() {
         sha256,
         kind: "PDF",
         extractionStatus: "PENDING",
+        data: new Uint8Array(document.buffer),
       },
     });
 
@@ -184,6 +185,7 @@ async function main() {
       storedName: reportStoredName,
       sha256: reportHash,
       sizeBytes: buffer.byteLength,
+      data: new Uint8Array(buffer),
     },
   });
 

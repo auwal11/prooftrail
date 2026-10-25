@@ -34,6 +34,7 @@ export async function POST(request: Request, context: RouteContext) {
         storedName,
         sha256: hash,
         sizeBytes: buffer.byteLength,
+        data: new Uint8Array(buffer),
       },
       select: { id: true, createdAt: true },
     });

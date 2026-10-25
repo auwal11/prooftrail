@@ -39,6 +39,15 @@ export async function readStoredFile(area: StorageArea, storedName: string): Pro
   return readFile(path.join(areaDir(area), storedName));
 }
 
+export async function readStoredBytes(
+  data: Uint8Array | null,
+  area: StorageArea,
+  storedName: string,
+): Promise<Buffer> {
+  if (data && data.byteLength > 0) return Buffer.from(data);
+  return readStoredFile(area, storedName);
+}
+
 export async function deleteStoredFile(area: StorageArea, storedName: string): Promise<void> {
   assertStoredName(storedName);
   await rm(path.join(areaDir(area), storedName), { force: true });
