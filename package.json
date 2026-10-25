@@ -20,8 +20,8 @@
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
-    "image-size": "^2.0.2",
-    "next": "16.4.2",
+    "image-size": "^2.0.4",
+    "next": "^16.4.3",
     "pdf-lib": "1.17.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
@@ -35,14 +35,19 @@
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "eslint": "9.39.2",
-    "eslint-config-next": "16.4.2",
+    "eslint-config-next": "^16.4.3",
     "prisma": "6.19.3",
     "tailwindcss": "4.3.3",
-    "tsx": "4.21.0",
+    "tsx": "^4.23.15",
     "typescript": "5.9.3",
     "vitest": "5.0.5"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
+  },
+  "overrides": {
+    "deepmerge-ts": "8.0.2",
+    "esbuild": "0.28.1",
+    "postcss-selector-parser": "7.1.7"
   }
 }
