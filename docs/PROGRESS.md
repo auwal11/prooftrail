@@ -1,6 +1,6 @@
 # ProofTrail — Progress Log
 
-Last updated: 2026-10-24 (WAT)
+Last updated: 2026-10-25 (WAT)
 
 ## Current status
 
@@ -67,14 +67,22 @@ The MVP is implemented end-to-end, runs locally against PostgreSQL, and is deplo
 - Fixed the dark "Honest boundaries" panel by replacing a conflicting `.card` class with `.card-dark`.
 - Fixed 4 px horizontal overflow on the case workspace at narrow widths by adding `min-w-0` to the main content and sticky sidebar grid children.
 - Fixed production sign-in and registration: same-origin checks now accept the proxy-forwarded public host in addition to the request URL and `APP_URL`. Covered by `tests/origin.test.ts`.
-- Upgraded Next.js to 16.4.3, image-size to 2.0.4, tsx to 4.23.15, and pinned patched transitive versions (`deepmerge-ts` 8.0.2, `esbuild` 0.28.1, `postcss-selector-parser` 7.1.7). `npm audit` reports 0 vulnerabilities.
+- Upgraded Next.js to 16.4.3, image-size to 2.0.4, tsx to 4.23.15, and pinned patched transitive versions (`deepmerge-ts` 8.0.2, `esbuild` 0.28.1, `postcss-selector-parser` 7.1.7). `npm audit` reports 0 vulnerabilities; the production build log reports `found 0 vulnerabilities`.
+
+### Production durability
+
+- Added `Evidence.data` and `Report.data` (`bytea`) via migration `20261025064551_blob_storage`.
+- Evidence uploads, demo seeding, and report generation now persist bytes in PostgreSQL; download and extraction paths read the database first and fall back to private disk storage.
+- Fixed live report and evidence downloads that previously returned 500 after redeploys because the seeded files only existed on a developer machine.
+- Re-seeded the production demo with blobs, switched the deployment to the database provider's internal hostname, and verified login, case view, report download (16,723 bytes), and evidence download (1,461 bytes) after a fresh redeploy.
+- Removed the temporary, token-gated production bootstrap endpoint after applying the migration and seed.
 
 ### Verification
 
 - `npx tsc --noEmit`: passed.
 - `npx eslint .`: 0 errors.
 - `npm run build`: passed; all routes compiled.
-- `npx vitest run`: 27 tests in 6 files passed.
+- `npx vitest run`: 31 tests in 7 files passed.
 - Browser QA:
   - Demo login with a clean seeded case.
   - New case creation with data service, amount, incident date, reference, and phone.
@@ -123,6 +131,6 @@ The MVP is implemented end-to-end, runs locally against PostgreSQL, and is deplo
 - [x] Seeded demo account.
 - [x] README, technical spec, implementation plan, progress log.
 - [x] Typecheck, lint, tests, build.
-- [ ] Git history pushed to GitHub.
-- [ ] Public deployment URL.
-- [ ] Final visual pass at mobile and desktop.
+- [x] Git history pushed to GitHub.
+- [x] Public deployment URL.
+- [x] Final visual pass at mobile and desktop.
