@@ -220,11 +220,10 @@ Live demo: <https://prooftrail.rumptycloud.app> (RumptyCloud, branch `main`, aut
 1. Provision PostgreSQL and set `DATABASE_URL`.
 2. Run `npm run db:deploy`, then optionally `npm run db:seed`.
 3. Set `APP_URL` to the public HTTPS origin. Behind a proxy the same-origin check also accepts the forwarded host, so a missing or localhost `APP_URL` does not break sign-in.
-4. Mount persistent private storage for `STORAGE_DIR`.
-5. Ensure `assets/tessdata/` is included in the deployment bundle.
-6. Run `npm run build` then `npm start`.
+4. Ensure `assets/tessdata/` is included in the deployment bundle.
+5. Run `npm run build` then `npm start`.
 
-Do not enable public access to `var/` or any storage directory. The free deployment filesystem is ephemeral, so uploaded evidence and generated reports do not survive a redeploy unless `STORAGE_DIR` is mounted on persistent storage.
+Evidence and report bytes are mirrored in PostgreSQL (`Evidence.data`, `Report.data`) and read from there first, with `STORAGE_DIR` used as a private local fallback. This keeps uploads and generated reports available across redeploys even when the container filesystem is ephemeral. Use the database provider's internal hostname for `DATABASE_URL` when the app runs in the same private network. Do not enable public access to `var/` or any storage directory.
 
 ## Known limitations
 
