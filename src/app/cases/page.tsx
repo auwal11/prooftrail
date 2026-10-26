@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { EmptyState, SiteFooter, SiteHeader, StatusBadge } from "@/components/ui";
+import { SiteFooter, SiteHeader, StatusBadge } from "@/components/ui";
+import { SampleCaseButton } from "@/components/sample-case-button";
 import { listCases } from "@/lib/case-data";
 import { formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
@@ -65,15 +66,54 @@ export default async function CasesPage() {
 
         <div className="mt-10">
           {cases.length === 0 ? (
-            <EmptyState
-              title="No cases yet"
-              body="Start with the transaction you are disputing. You can add the debit alert, provider messages, and receipts as you go."
-              action={
+            <div className="card card-pad mx-auto max-w-2xl">
+              <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-brand-dark">
+                Your first case
+              </p>
+              <h2 className="mt-2 font-display text-[26px] leading-tight">No cases yet</h2>
+              <p className="mt-2 text-[13px] leading-relaxed text-muted">
+                Start with the transaction you are disputing. You can add the debit alert,
+                provider messages, and receipts as you go.
+              </p>
+
+              <ol className="mt-5 space-y-3">
+                {[
+                  {
+                    title: "Create the case",
+                    body: "Record the service, provider, amount, incident date, and phone number.",
+                  },
+                  {
+                    title: "Upload what you already have",
+                    body: "Debit alerts, provider SMS or email, receipts, and screenshots. Text is extracted; hashes are recorded.",
+                  },
+                  {
+                    title: "Review the gaps and generate a report",
+                    body: "Check the extracted facts, then produce a source-linked PDF for the provider's support channel.",
+                  },
+                ].map((step, index) => (
+                  <li key={step.title} className="flex gap-3">
+                    <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full border border-brand/30 bg-brand-soft text-[11px] font-semibold text-brand-dark">
+                      {index + 1}
+                    </span>
+                    <span>
+                      <span className="block text-[12.5px] font-semibold">{step.title}</span>
+                      <span className="mt-0.5 block text-[12px] leading-relaxed text-muted">{step.body}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+
+              <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-line pt-5">
                 <Link href="/cases/new" className="btn btn-primary">
                   Create your first case
                 </Link>
-              }
-            />
+                <SampleCaseButton />
+              </div>
+              <p className="mt-2 text-[11px] text-muted">
+                The sample is copied into your account. It uses synthetic documents and does
+                not contact any provider.
+              </p>
+            </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {cases.map((item) => (

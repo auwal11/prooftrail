@@ -69,6 +69,18 @@ The MVP is implemented end-to-end, runs locally against PostgreSQL, and is deplo
 - Fixed production sign-in and registration: same-origin checks now accept the proxy-forwarded public host in addition to the request URL and `APP_URL`. Covered by `tests/origin.test.ts`.
 - Upgraded Next.js to 16.4.3, image-size to 2.0.4, tsx to 4.23.15, and pinned patched transitive versions (`deepmerge-ts` 8.0.2, `esbuild` 0.28.1, `postcss-selector-parser` 7.1.7). `npm audit` reports 0 vulnerabilities; the production build log reports `found 0 vulnerabilities`.
 
+### Case workflow and guidance
+
+- Added a sticky four-step case stepper (Evidence, Findings, Review facts, Report) with live completion details and `aria-current`.
+- Added explicit fact review state (`reviewedAt`), Unreviewed/All/Reviewed filters, and bulk "mark visible as reviewed" with an audit event.
+- Replaced severity jargon with Blocker/Important/Info and raised duplicate-evidence and reference-variance findings to Important.
+- Added an open-gaps summary and a copyable neutral complaint draft that never claims fraud or contacts a provider.
+- Added report guidance: open-gaps summary, transaction reference and phone, a "How to use this report" section, and a clearer limitation statement.
+- Added a three-step empty state with an "Explore sample case" action that copies the demo case into the user's account.
+- Added service-specific suggested-evidence lists to case creation and a day-first date hint.
+- Added XHR upload progress, an extracting state, and a mobile "Take photo" capture input.
+- Added a route-level loading skeleton for the cases dashboard.
+
 ### Production durability
 
 - Added `Evidence.data` and `Report.data` (`bytea`) via migration `20261025064551_blob_storage`.
@@ -82,7 +94,7 @@ The MVP is implemented end-to-end, runs locally against PostgreSQL, and is deplo
 - `npx tsc --noEmit`: passed.
 - `npx eslint .`: 0 errors.
 - `npm run build`: passed; all routes compiled.
-- `npx vitest run`: 31 tests in 7 files passed.
+- `npx vitest run`: 34 tests in 8 files passed.
 - Browser QA:
   - Demo login with a clean seeded case.
   - New case creation with data service, amount, incident date, reference, and phone.
@@ -111,6 +123,7 @@ The MVP is implemented end-to-end, runs locally against PostgreSQL, and is deplo
 - `tests/discrepancies.test.ts` — delivery/status findings, variances, duplicates, empty case, missing amount.
 - `tests/timeline.test.ts` — UTC wall-clock handling, duplicate grouping, rejected facts.
 - `tests/origin.test.ts` — same-origin checks for direct, proxy-forwarded, configured, rejected, and non-browser requests.
+- `tests/complaint-draft.test.ts` — neutral complaint draft fields, gap inclusion, optional details, and no fraud claims.
 
 ## Blockers
 

@@ -39,6 +39,13 @@ const SEVERITY_COLOR: Record<Severity, RGB> = {
   info: COLORS.info,
 };
 
+const SEVERITY_LABEL: Record<Severity, string> = {
+  high: "BLOCKER",
+  medium: "IMPORTANT",
+  low: "INFO",
+  info: "INFO",
+};
+
 const FACT_LABEL: Record<FactTypeValue, string> = {
   AMOUNT: "Amount",
   DATE: "Date",
@@ -373,7 +380,7 @@ class ReportLayout {
   }
 
   severityBadge(severity: Severity, x: number, y: number): void {
-    const label = severity.toUpperCase();
+    const label = SEVERITY_LABEL[severity];
     const width = this.bold.widthOfTextAtSize(label, 6.6) + 12;
     this.page.drawRectangle({
       x,
@@ -625,6 +632,9 @@ export async function generateCaseReport(
       { label: "Service", value: detail.serviceType },
       { label: "Provider", value: detail.provider || "Not recorded" },
       { label: "Claimed amount", value: formatMoney(detail.claimedAmount, detail.currency) },
+      { label: "Case ID", value: shortId(detail.id) },
+      { label: "Transaction reference", value: detail.transactionReference || "Not recorded" },
+      { label: "Phone affected", value: detail.customerPhone || "Not recorded" },
       { label: "Case status", value: detail.status.replace(/_/g, " ") },
     ],
     2,
@@ -664,6 +674,32 @@ export async function generateCaseReport(
     ],
     2,
   );
+
+  layout.sectionTitle("Open gaps summary");
+  const openGaps = detail.discrepancies.filter(
+    (finding) => finding.severity === "high" || finding.severity === "medium",
+  );
+  if (openGaps.length === 0) {
+    layout.paragraph(
+      "No blocker or important gaps were detected in the current evidence. This does not confirm that the transaction was valid or that the service was delivered.",
+      { size: 9 },
+    );
+  } else {
+    layout.paragraph(
+      "These are the unresolved information or consistency gaps that matter most. Each is a lead for review, not a finding of wrongdoing.",
+      { size: 8.6, color: COLORS.muted },
+    );
+    layout.moveDown(3);
+    openGaps.forEach((finding, index) => {
+      layout.paragraph(`${index + 1}. ${SEVERITY_LABEL[finding.severity]}: ${finding.title}`, {
+        size: 9,
+        font: bold,
+        color: COLORS.ink,
+      });
+      layout.paragraph(`Next step: ${finding.recommendation}`, { size: 8.4, color: COLORS.muted });
+      layout.moveDown(2);
+    });
+  }
 
   layout.sectionTitle("Evidence inventory");
   if (detail.evidence.length === 0) {
@@ -872,6 +908,17 @@ export async function generateCaseReport(
     });
   }
 
+  layout.sectionTitle("How to use this report");
+  [
+    "Check every fact and quote against the original files before sharing this report.",
+    "Attach it to a complaint submitted through the provider's official support channel, together with the original evidence files.",
+    "Use the case ID and file hashes when discussing the record. Regenerate the report after corrections or new evidence.",
+    "ProofTrail does not submit complaints, contact providers, or decide the outcome of a dispute.",
+  ].forEach((item) => {
+    layout.paragraph(`- ${item}`, { size: 8.7, lineHeight: 12.2 });
+    layout.moveDown(2);
+  });
+
   layout.sectionTitle("Method and limitations");
   const limitations = [
     "Facts are extracted by deterministic pattern rules from the text layer of PDFs, OCR of images, and plain text files. Rules can miss facts or misread formats.",
@@ -880,6 +927,7 @@ export async function generateCaseReport(
     "Corrections made by a reviewer are recorded as attributable audit events. Original extracted values are retained and are never overwritten.",
     "The absence of a discrepancy does not prove that a transaction was correct or that a service was delivered.",
     "Evidence hashes support file-integrity checks only. They are not a blockchain proof, not a tamper-proof audit log, and not a substitute for provider records.",
+    "This report describes inconsistencies and gaps in the uploaded material. It does not establish that fraud occurred, who is responsible, or whether a provider acted improperly.",
     "This report is a structured summary for the customer's own review. It should be checked against the original files before being sent to any institution.",
   ];
   limitations.forEach((item) => {

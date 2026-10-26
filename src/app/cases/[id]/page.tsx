@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CaseActions } from "@/components/case-actions";
+import { CaseStepper } from "@/components/case-stepper";
 import { EvidenceActions } from "@/components/evidence-actions";
 import { EvidenceUploader } from "@/components/evidence-uploader";
 import { FactReview } from "@/components/fact-review";
@@ -146,6 +147,12 @@ export default async function CasePage({ params }: PageProps) {
 
   const evidenceNames = new Map(detail.evidence.map((item) => [item.id, item.originalName]));
   const caseFacts = detail.facts;
+  const reviewedFacts = detail.facts.filter(
+    (fact) => Boolean(fact.reviewedAt) || fact.status !== "original",
+  ).length;
+  const extractionComplete = detail.evidence.some(
+    (evidence) => evidence.extractionStatus === "COMPLETED",
+  );
 
   function findingSources(finding: Finding): string {
     const labels = new Set<string>();
@@ -189,25 +196,45 @@ export default async function CasePage({ params }: PageProps) {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <a href="#evidence" className="btn btn-outline btn-sm">
-              Evidence
-            </a>
-            <a href="#findings" className="btn btn-outline btn-sm">
-              Findings {detail.discrepancies.length > 0 ? `(${detail.discrepancies.length})` : ""}
-            </a>
-            <a href="#facts" className="btn btn-outline btn-sm">
-              Review facts
-            </a>
-            <a href="#report" className="btn btn-primary btn-sm">
-              Report
-            </a>
-          </div>
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <CaseStepper
+          steps={[
+            {
+              id: "evidence",
+              label: "Evidence",
+              detail: `${detail.evidence.length} file${detail.evidence.length === 1 ? "" : "s"}`,
+              complete: detail.evidence.length > 0,
+            },
+            {
+              id: "findings",
+              label: "Findings",
+              detail:
+                detail.discrepancies.length === 0
+                  ? extractionComplete
+                    ? "No gaps found"
+                    : "Pending"
+                  : `${detail.discrepancies.length} open`,
+              complete: extractionComplete,
+            },
+            {
+              id: "facts",
+              label: "Review facts",
+              detail: `${reviewedFacts}/${detail.facts.length} reviewed`,
+              complete: detail.facts.length > 0 && reviewedFacts === detail.facts.length,
+            },
+            {
+              id: "report",
+              label: "Report",
+              detail: detail.reports.length > 0 ? `${detail.reports.length} generated` : "Not generated",
+              complete: detail.reports.length > 0,
+            },
+          ]}
+        />
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0 space-y-6">
-            <section id="evidence" className="card card-pad scroll-mt-24">
+            <section id="evidence" className="card card-pad scroll-mt-28">
               <SectionHeading
                 eyebrow="Step 1"
                 title="Evidence"
@@ -240,23 +267,23 @@ export default async function CasePage({ params }: PageProps) {
               )}
             </section>
 
-            <section id="findings" className="card card-pad scroll-mt-24">
+            <section id="findings" className="card card-pad scroll-mt-28">
               <SectionHeading
                 eyebrow="Step 2"
                 title="Discrepancies and missing information"
                 action={
                   detail.discrepancies.length > 0 ? (
                     <div className="flex gap-1.5">
-                      {severityCounts.high > 0 ? <span className="badge badge-danger">{severityCounts.high} high</span> : null}
-                      {severityCounts.medium > 0 ? <span className="badge badge-amber">{severityCounts.medium} medium</span> : null}
-                      {severityCounts.low > 0 ? <span className="badge badge-blue">{severityCounts.low} low</span> : null}
+                      {severityCounts.high > 0 ? <span className="badge badge-danger">{severityCounts.high} blocker</span> : null}
+                      {severityCounts.medium > 0 ? <span className="badge badge-amber">{severityCounts.medium} important</span> : null}
+                      {severityCounts.low + severityCounts.info > 0 ? <span className="badge badge-blue">{severityCounts.low + severityCounts.info} info</span> : null}
                     </div>
                   ) : null
                 }
               />
 
               <p className="rounded-lg border border-[#eee4cf] bg-[#fdf9f1] px-3.5 py-2.5 text-[11.5px] leading-relaxed text-[#7a5a2a]">
-                A discrepancy is an investigative lead, not proof of fraud. Rules compare
+                Findings are leads from your evidence, not proof of fraud. Rules compare
                 extracted facts deterministically; they do not decide who is right.
               </p>
 
@@ -294,7 +321,7 @@ export default async function CasePage({ params }: PageProps) {
               )}
             </section>
 
-            <section id="facts" className="card card-pad scroll-mt-24">
+            <section id="facts" className="card card-pad scroll-mt-28">
               <SectionHeading
                 eyebrow="Step 3"
                 title="Review extracted facts"
@@ -305,11 +332,11 @@ export default async function CasePage({ params }: PageProps) {
                   </span>
                 }
               />
-              <FactReview facts={detail.facts} />
+              <FactReview caseId={detail.id} facts={detail.facts} />
             </section>
 
-            <section id="timeline" className="card card-pad scroll-mt-24">
-              <SectionHeading eyebrow="Step 4" title="Evidence timeline" />
+            <section id="timeline" className="card card-pad scroll-mt-28">
+              <SectionHeading eyebrow="Reference" title="Evidence timeline" />
               {detail.timeline.length === 0 ? (
                 <EmptyState
                   title="Nothing to place on a timeline yet"
@@ -343,13 +370,33 @@ export default async function CasePage({ params }: PageProps) {
           </div>
 
           <aside className="min-w-0 space-y-5 lg:sticky lg:top-6 lg:self-start">
-            <section id="report" className="card card-pad scroll-mt-24">
-              <SectionHeading eyebrow="Step 5" title="Case report" />
+            <section id="report" className="card card-pad scroll-mt-28">
+              <SectionHeading eyebrow="Step 4" title="Case report" />
               <ReportPanel
                 caseId={detail.id}
                 reports={detail.reports}
                 findingCount={detail.discrepancies.length}
                 factCount={detail.facts.length}
+                caseInfo={{
+                  id: detail.id,
+                  title: detail.title,
+                  serviceType: detail.serviceType,
+                  provider: detail.provider,
+                  claimedAmount: detail.claimedAmount,
+                  currency: detail.currency,
+                  incidentDate: detail.incidentDate,
+                  transactionReference: detail.transactionReference,
+                  customerPhone: detail.customerPhone,
+                  userName: user.name,
+                  evidenceNames: detail.evidence.map((item) => item.originalName),
+                  openFindings: detail.discrepancies
+                    .filter((finding) => finding.severity === "high" || finding.severity === "medium")
+                    .map((finding) => ({
+                      code: finding.code,
+                      title: finding.title,
+                      severity: finding.severity,
+                    })),
+                }}
               />
             </section>
 

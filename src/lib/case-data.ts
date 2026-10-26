@@ -116,6 +116,7 @@ function toFactViews(caseRecord: CaseRecord): FactView[] {
       snippet: fact.snippet,
       extractor: fact.extractor,
       extractorVersion: fact.extractorVersion,
+      reviewedAt: fact.reviewedAt?.toISOString() ?? null,
       createdAt: fact.createdAt.toISOString(),
       status: effective.status,
       effectiveValue:

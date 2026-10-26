@@ -46,6 +46,13 @@ export const caseUpdateSchema = caseCreateSchema.partial().extend({
   status: z.enum(["DRAFT", "EVIDENCE_REVIEW", "READY", "CLOSED"]).optional(),
 });
 
+export const factReviewSchema = z.object({
+  factIds: z
+    .array(z.string().trim().min(1))
+    .min(1, "Select at least one fact.")
+    .max(500, "Too many facts in one request."),
+});
+
 export const revisionSchema = z.object({
   action: z.enum(["CORRECT", "REJECT", "RESTORE"]),
   newValue: z.string().trim().max(200).optional(),
