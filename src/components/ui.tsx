@@ -73,9 +73,9 @@ export function StatusBadge({ status }: { status: CaseStatusValue }) {
 }
 
 const SEVERITY_STYLE: Record<Severity, { label: string; className: string }> = {
-  high: { label: "High", className: "badge-danger" },
-  medium: { label: "Medium", className: "badge-amber" },
-  low: { label: "Low", className: "badge-blue" },
+  high: { label: "Blocker", className: "badge-danger" },
+  medium: { label: "Important", className: "badge-amber" },
+  low: { label: "Info", className: "badge-blue" },
   info: { label: "Info", className: "badge-neutral" },
 };
 

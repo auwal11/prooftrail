@@ -72,6 +72,7 @@ export type FactView = {
   snippet: string | null;
   extractor: string;
   extractorVersion: string;
+  reviewedAt: string | null;
   createdAt: string;
   status: "original" | "corrected" | "rejected";
   effectiveValue: string | null;

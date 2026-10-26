@@ -9,6 +9,27 @@ const SERVICE_OPTIONS = [
   { value: "OTHER", label: "Other", hint: "A different transaction type" },
 ] as const;
 
+const EVIDENCE_HINTS: Record<"AIRTIME" | "DATA" | "OTHER", string[]> = {
+  AIRTIME: [
+    "Debit alert or bank statement line showing the recharge",
+    "Provider SMS or app confirmation, if any",
+    "Recharge receipt or agent slip",
+    "Screenshot of the failed or pending state",
+  ],
+  DATA: [
+    "Debit alert or bank statement line showing the data purchase",
+    "Data plan confirmation or failure message",
+    "Provider app or USSD screenshot showing remaining data",
+    "Any refund or reversal message",
+  ],
+  OTHER: [
+    "Proof of payment (alert, statement, or receipt)",
+    "Provider confirmation or failure message",
+    "Screenshot of the affected account or service",
+    "Any correspondence with support",
+  ],
+};
+
 export function NewCaseForm() {
   const router = useRouter();
   const [serviceType, setServiceType] = useState<"AIRTIME" | "DATA" | "OTHER">("AIRTIME");
@@ -124,6 +145,24 @@ export function NewCaseForm() {
             </div>
           </div>
 
+          <div className="rounded-xl border border-[#e7e0d2] bg-[#fbfaf5] p-3.5">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-muted">
+              Suggested evidence for this service
+            </p>
+            <ul className="mt-2 space-y-1.5">
+              {(EVIDENCE_HINTS[serviceType] ?? EVIDENCE_HINTS.OTHER).map((item) => (
+                <li key={item} className="flex gap-2 text-[11.5px] leading-relaxed text-muted">
+                  <span aria-hidden="true" className="mt-[7px] h-1 w-1 flex-none rounded-full bg-[#b9b09b]" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-[10.5px] leading-relaxed text-muted">
+              You can add more files after the case is created. Missing documents appear as
+              gaps, not as failures.
+            </p>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="label" htmlFor="provider">
@@ -156,7 +195,11 @@ export function NewCaseForm() {
               <label className="label" htmlFor="incidentDate">
                 Incident date
               </label>
-              <input id="incidentDate" name="incidentDate" className="input" type="date" />
+              <input id="incidentDate" name="incidentDate" className="input" type="date" lang="en-GB" />
+              <p className="mt-1 text-[10.5px] leading-relaxed text-muted">
+                Use the date shown in Nigeria (day/month/year), not the SMS timestamp in
+                another timezone.
+              </p>
             </div>
             <div>
               <label className="label" htmlFor="transactionReference">

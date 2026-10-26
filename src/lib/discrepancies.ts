@@ -161,7 +161,7 @@ export function detectDiscrepancies(input: DiscrepancyInput): Finding[] {
       makeFinding({
         code: "DUPLICATE_EVIDENCE",
         title: "Identical evidence files detected",
-        severity: "low",
+        severity: "medium",
         category: "evidence",
         explanation: `${group.length} files share the same SHA-256 hash (${hash.slice(
           0,
@@ -403,7 +403,7 @@ export function detectDiscrepancies(input: DiscrepancyInput): Finding[] {
       makeFinding({
         code: "REFERENCE_VARIANCE",
         title: "More than one transaction reference appears",
-        severity: "low",
+        severity: "medium",
         category: "reference",
         explanation: `The evidence contains different references: ${referenceValues
           .map((value) => `"${value}"`)

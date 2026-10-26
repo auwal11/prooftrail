@@ -85,6 +85,10 @@ export async function POST(request: Request, context: RouteContext) {
       select: { id: true, createdAt: true },
     });
 
+    if (!fact.reviewedAt) {
+      await db.fact.update({ where: { id: fact.id }, data: { reviewedAt: new Date() } });
+    }
+
     const actionLabel =
       action === "CORRECT" ? "corrected" : action === "REJECT" ? "marked not applicable" : "restored";
 
