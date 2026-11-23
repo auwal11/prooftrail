@@ -6,6 +6,26 @@ Last updated: 2026-10-25 (WAT)
 
 The MVP is implemented end-to-end, runs locally against PostgreSQL, and is deployed at <https://prooftrail.rumptycloud.app>. Registration, authentication, case management, private evidence upload, PDF/OCR/text extraction, source-linked facts, deterministic findings, fact review, timeline, PDF reporting, case closure, and deletion all work in the browser. Typecheck, lint, unit tests, and production build pass.
 
+## Production upgrade increment — 2026-11-23
+
+- Added an independent external dispute lifecycle (`Draft`, `Collecting evidence`,
+  `Under review`, `Report ready`, `Submitted to provider`, `Awaiting response`,
+  `Resolved`, `Closed`) without changing the existing internal evidence stepper.
+- Added ownership-scoped lifecycle transition validation, status history, optional
+  transition notes, and activity events.
+- Added server-side workspace search across title, provider, and transaction
+  reference, plus lifecycle/service filters and sorting.
+- Added private case notes with add/edit/delete APIs, author checks, audit events,
+  and explicit exclusion from reports.
+- Added a reusable glossary covering confidence, provenance, evidence source,
+  SHA-256, duplicate evidence, findings, blockers, and open gaps.
+- Added lifecycle unit coverage. Final verification: 37 tests in 9 files passed,
+  typecheck passed, lint passed, and the production build passed.
+
+This increment intentionally does not claim the remaining ProofTrail upgrade items
+(share packs, CSV export, Hausa explanations, guided interview, photo guidance,
+and automatic checklist progression) as complete.
+
 ## Completed
 
 ### Foundation

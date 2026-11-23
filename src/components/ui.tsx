@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Brand } from "@/components/brand";
 import { LogoutButton } from "@/components/logout-button";
-import type { CaseStatusValue, Severity } from "@/lib/domain";
+import type { CaseStatusValue, LifecycleStatusValue, Severity } from "@/lib/domain";
+import { LIFECYCLE_LABEL } from "@/lib/lifecycle";
 
 export function SiteHeader({
   user,
@@ -18,6 +19,9 @@ export function SiteHeader({
               <Link href="/cases" className="nav-link">
                 Cases
               </Link>
+              <Link href="/glossary" className="nav-link hidden sm:inline-flex">
+                Glossary
+              </Link>
               <Link href="/cases/new" className="btn btn-outline btn-sm">
                 New case
               </Link>
@@ -29,6 +33,9 @@ export function SiteHeader({
             </>
           ) : (
             <>
+              <Link href="/glossary" className="nav-link hidden sm:inline-flex">
+                Glossary
+              </Link>
               <Link href="/login" className="nav-link">
                 Sign in
               </Link>
@@ -70,6 +77,21 @@ const STATUS_STYLE: Record<CaseStatusValue, { label: string; className: string }
 export function StatusBadge({ status }: { status: CaseStatusValue }) {
   const style = STATUS_STYLE[status];
   return <span className={`badge ${style.className}`}>{style.label}</span>;
+}
+
+const LIFECYCLE_STYLE: Record<LifecycleStatusValue, string> = {
+  DRAFT: "badge-neutral",
+  COLLECTING_EVIDENCE: "badge-blue",
+  UNDER_REVIEW: "badge-amber",
+  REPORT_READY: "badge-brand",
+  SUBMITTED_TO_PROVIDER: "badge-blue",
+  AWAITING_RESPONSE: "badge-amber",
+  RESOLVED: "badge-brand",
+  CLOSED: "badge-neutral",
+};
+
+export function LifecycleBadge({ status }: { status: LifecycleStatusValue }) {
+  return <span className={`badge ${LIFECYCLE_STYLE[status]}`}>{LIFECYCLE_LABEL[status]}</span>;
 }
 
 const SEVERITY_STYLE: Record<Severity, { label: string; className: string }> = {

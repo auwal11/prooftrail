@@ -20,6 +20,17 @@ enum CaseStatus {
   CLOSED
 }
 
+enum LifecycleStatus {
+  DRAFT
+  COLLECTING_EVIDENCE
+  UNDER_REVIEW
+  REPORT_READY
+  SUBMITTED_TO_PROVIDER
+  AWAITING_RESPONSE
+  RESOLVED
+  CLOSED
+}
+
 enum EvidenceKind {
   IMAGE
   PDF
@@ -66,6 +77,8 @@ model User {
   uploads   Evidence[]     @relation("EvidenceUploader")
   reports   Report[]
   events    CaseEvent[]
+  statusChanges CaseStatusHistory[]
+  notes     CaseNote[]
 }
 
 model Session {
@@ -94,6 +107,7 @@ model Case {
   customerPhone        String?
   description          String?
   status               CaseStatus  @default(DRAFT)
+  lifecycleStatus      LifecycleStatus @default(DRAFT)
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
 
@@ -102,8 +116,40 @@ model Case {
   facts    Fact[]
   events   CaseEvent[]
   reports  Report[]
+  statusHistory CaseStatusHistory[]
+  notes    CaseNote[]
 
   @@index([userId, createdAt])
+  @@index([userId, lifecycleStatus, updatedAt])
+}
+
+model CaseStatusHistory {
+  id        String         @id @default(cuid())
+  caseId    String
+  actorId   String
+  from      LifecycleStatus?
+  to        LifecycleStatus
+  note      String?
+  createdAt DateTime       @default(now())
+
+  case  Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@index([caseId, createdAt])
+}
+
+model CaseNote {
+  id        String   @id @default(cuid())
+  caseId    String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  case   Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([caseId, createdAt])
 }
 
 model Evidence {

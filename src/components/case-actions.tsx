@@ -2,27 +2,30 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { CaseStatusValue } from "@/lib/domain";
+import type { CaseStatusValue, LifecycleStatusValue } from "@/lib/domain";
+import { LIFECYCLE_LABEL } from "@/lib/lifecycle";
 
 export function CaseActions({
   caseId,
   status,
+  lifecycleStatus,
 }: {
   caseId: string;
   status: CaseStatusValue;
+  lifecycleStatus: LifecycleStatusValue;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function setStatus(next: CaseStatusValue) {
+  async function setStatus(next: CaseStatusValue | LifecycleStatusValue, lifecycle = false) {
     setBusy("status");
     setError(null);
     try {
       const response = await fetch(`/api/cases/${caseId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: next }),
+        body: JSON.stringify(lifecycle ? { lifecycleStatus: next } : { status: next }),
       });
       const data = (await response.json()) as { error?: string };
       if (!response.ok) {
@@ -87,6 +90,20 @@ export function CaseActions({
           </button>
         )}
       </div>
+
+      <label className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
+        External dispute lifecycle
+        <select
+          className="input mt-1.5 w-full text-[12px] normal-case tracking-normal"
+          value={lifecycleStatus}
+          disabled={busy !== null}
+          onChange={(event) => setStatus(event.target.value as LifecycleStatusValue, true)}
+        >
+          {(Object.keys(LIFECYCLE_LABEL) as LifecycleStatusValue[]).map((value) => (
+            <option key={value} value={value}>{LIFECYCLE_LABEL[value]}</option>
+          ))}
+        </select>
+      </label>
 
       <button type="button" className="btn btn-danger btn-sm" disabled={busy !== null} onClick={remove}>
         {busy === "delete" ? "Deleting…" : "Delete case"}

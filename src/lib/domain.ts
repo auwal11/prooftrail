@@ -1,5 +1,14 @@
 export type ServiceTypeValue = "AIRTIME" | "DATA" | "OTHER";
 export type CaseStatusValue = "DRAFT" | "EVIDENCE_REVIEW" | "READY" | "CLOSED";
+export type LifecycleStatusValue =
+  | "DRAFT"
+  | "COLLECTING_EVIDENCE"
+  | "UNDER_REVIEW"
+  | "REPORT_READY"
+  | "SUBMITTED_TO_PROVIDER"
+  | "AWAITING_RESPONSE"
+  | "RESOLVED"
+  | "CLOSED";
 export type EvidenceKindValue = "IMAGE" | "PDF" | "TEXT";
 export type ExtractionStatusValue =
   | "PENDING"
@@ -91,6 +100,7 @@ export type CaseSummary = {
   customerPhone: string | null;
   description: string | null;
   status: CaseStatusValue;
+  lifecycleStatus: LifecycleStatusValue;
   createdAt: string;
   updatedAt: string;
   evidenceCount: number;
@@ -130,6 +140,23 @@ export type CaseEventView = {
   createdAt: string;
 };
 
+export type CaseStatusHistoryView = {
+  id: string;
+  from: LifecycleStatusValue | null;
+  to: LifecycleStatusValue;
+  note: string | null;
+  actorName: string;
+  createdAt: string;
+};
+
+export type CaseNoteView = {
+  id: string;
+  body: string;
+  authorName: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ReportView = {
   id: string;
   sha256: string;
@@ -144,5 +171,7 @@ export type CaseDetail = CaseSummary & {
   discrepancies: Finding[];
   timeline: TimelineEntry[];
   events: CaseEventView[];
+  statusHistory: CaseStatusHistoryView[];
+  notes: CaseNoteView[];
   reports: ReportView[];
 };

@@ -44,6 +44,23 @@ export const caseCreateSchema = z.object({
 
 export const caseUpdateSchema = caseCreateSchema.partial().extend({
   status: z.enum(["DRAFT", "EVIDENCE_REVIEW", "READY", "CLOSED"]).optional(),
+  lifecycleStatus: z
+    .enum([
+      "DRAFT",
+      "COLLECTING_EVIDENCE",
+      "UNDER_REVIEW",
+      "REPORT_READY",
+      "SUBMITTED_TO_PROVIDER",
+      "AWAITING_RESPONSE",
+      "RESOLVED",
+      "CLOSED",
+    ])
+    .optional(),
+  statusNote: z.string().trim().max(500).optional(),
+});
+
+export const noteSchema = z.object({
+  body: z.string().trim().min(1, "Write a note before saving.").max(2000),
 });
 
 export const factReviewSchema = z.object({

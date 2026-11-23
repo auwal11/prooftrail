@@ -2,8 +2,10 @@ import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { detectDiscrepancies } from "@/lib/discrepancies";
 import type {
+  CaseNoteView,
   CaseDetail,
   CaseSummary,
+  CaseStatusHistoryView,
   EvidenceView,
   FactView,
   SourceLocator,
@@ -33,6 +35,14 @@ const caseInclude = {
   reports: {
     orderBy: { createdAt: "desc" },
     include: { createdBy: { select: { name: true } } },
+  },
+  statusHistory: {
+    orderBy: { createdAt: "asc" },
+    include: { actor: { select: { name: true } } },
+  },
+  notes: {
+    orderBy: { createdAt: "asc" },
+    include: { author: { select: { name: true } } },
   },
 } satisfies Prisma.CaseInclude;
 
@@ -148,6 +158,7 @@ function toSummary(caseRecord: CaseRecord): CaseSummary {
     customerPhone: caseRecord.customerPhone,
     description: caseRecord.description,
     status: caseRecord.status,
+    lifecycleStatus: caseRecord.lifecycleStatus,
     createdAt: caseRecord.createdAt.toISOString(),
     updatedAt: caseRecord.updatedAt.toISOString(),
     evidenceCount: caseRecord.evidence.length,
@@ -253,14 +264,57 @@ export async function getCaseDetail(userId: string, caseId: string): Promise<Cas
       createdAt: report.createdAt.toISOString(),
       createdByName: report.createdBy.name,
     })),
+    statusHistory: caseRecord.statusHistory.map((item): CaseStatusHistoryView => ({
+      id: item.id,
+      from: item.from,
+      to: item.to,
+      note: item.note,
+      actorName: item.actor.name,
+      createdAt: item.createdAt.toISOString(),
+    })),
+    notes: caseRecord.notes.map((item): CaseNoteView => ({
+      id: item.id,
+      body: item.body,
+      authorName: item.author.name,
+      createdAt: item.createdAt.toISOString(),
+      updatedAt: item.updatedAt.toISOString(),
+    })),
     findingCount: discrepancies.length,
   };
 }
 
-export async function listCases(userId: string): Promise<CaseSummary[]> {
+export type CaseListFilters = {
+  query?: string;
+  lifecycleStatus?: string;
+  serviceType?: string;
+  sort?: "newest" | "oldest" | "amount" | "updated";
+};
+
+export async function listCases(userId: string, filters: CaseListFilters = {}): Promise<CaseSummary[]> {
+  const query = filters.query?.trim();
   const cases = await db.case.findMany({
-    where: { userId },
-    orderBy: { updatedAt: "desc" },
+    where: {
+      userId,
+      ...(filters.lifecycleStatus ? { lifecycleStatus: filters.lifecycleStatus as never } : {}),
+      ...(filters.serviceType ? { serviceType: filters.serviceType as never } : {}),
+      ...(query
+        ? {
+            OR: [
+              { title: { contains: query, mode: "insensitive" } },
+              { provider: { contains: query, mode: "insensitive" } },
+              { transactionReference: { contains: query, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    },
+    orderBy:
+      filters.sort === "oldest"
+        ? { createdAt: "asc" }
+        : filters.sort === "amount"
+          ? { claimedAmount: "desc" }
+          : filters.sort === "updated"
+            ? { updatedAt: "desc" }
+            : { createdAt: "desc" },
     include: {
       evidence: { select: { id: true } },
       facts: { select: { id: true } },
@@ -279,6 +333,7 @@ export async function listCases(userId: string): Promise<CaseSummary[]> {
     customerPhone: item.customerPhone,
     description: item.description,
     status: item.status,
+    lifecycleStatus: item.lifecycleStatus,
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
     evidenceCount: item.evidence.length,

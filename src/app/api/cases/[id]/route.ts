@@ -5,6 +5,7 @@ import { logCaseEvent } from "@/lib/audit";
 import { deleteStoredFile } from "@/lib/storage";
 import { ApiError, assertSameOrigin, jsonError, readJson, requireUser } from "@/lib/http";
 import { caseUpdateSchema, normalizePhone, normalizeReference } from "@/lib/validation";
+import { canTransition } from "@/lib/lifecycle";
 
 export const runtime = "nodejs";
 
@@ -18,7 +19,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const existing = await db.case.findFirst({
       where: { id, userId: user.id },
-      select: { id: true },
+      select: { id: true, lifecycleStatus: true },
     });
     if (!existing) throw new ApiError(404, "Case not found.", "not_found");
 
@@ -52,6 +53,29 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
     if (data.description !== undefined) update.description = data.description || null;
     if (data.status !== undefined) update.status = data.status;
+
+    if (data.lifecycleStatus !== undefined && data.lifecycleStatus !== existing.lifecycleStatus) {
+      if (!canTransition(existing.lifecycleStatus, data.lifecycleStatus)) {
+        throw new ApiError(409, "That lifecycle transition is not allowed.", "invalid_transition");
+      }
+      update.lifecycleStatus = data.lifecycleStatus;
+      await db.caseStatusHistory.create({
+        data: {
+          caseId: id,
+          actorId: user.id,
+          from: existing.lifecycleStatus,
+          to: data.lifecycleStatus,
+          note: data.statusNote || null,
+        },
+      });
+      await logCaseEvent({
+        caseId: id,
+        actorId: user.id,
+        type: "LIFECYCLE_STATUS_CHANGED",
+        summary: `Lifecycle changed to ${data.lifecycleStatus.replaceAll("_", " ").toLowerCase()}.`,
+        metadata: { from: existing.lifecycleStatus, to: data.lifecycleStatus, note: data.statusNote || null },
+      });
+    }
 
     await db.case.update({ where: { id }, data: update });
     await logCaseEvent({

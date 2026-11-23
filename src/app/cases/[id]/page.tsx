@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CaseActions } from "@/components/case-actions";
+import { CaseNotes } from "@/components/case-notes";
 import { CaseStepper } from "@/components/case-stepper";
 import { EvidenceActions } from "@/components/evidence-actions";
 import { EvidenceUploader } from "@/components/evidence-uploader";
@@ -9,6 +10,7 @@ import { FactReview } from "@/components/fact-review";
 import { ReportPanel } from "@/components/report-panel";
 import {
   EmptyState,
+  LifecycleBadge,
   SectionHeading,
   SeverityBadge,
   SiteFooter,
@@ -183,6 +185,7 @@ export default async function CasePage({ params }: PageProps) {
         <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
+              <LifecycleBadge status={detail.lifecycleStatus} />
               <StatusBadge status={detail.status} />
               <span className="badge badge-neutral">{SERVICE_LABEL[detail.serviceType] ?? detail.serviceType}</span>
               {detail.provider ? <span className="badge badge-neutral">{detail.provider}</span> : null}
@@ -367,6 +370,23 @@ export default async function CasePage({ params }: PageProps) {
                 </ol>
               )}
             </section>
+
+            <section className="card card-pad">
+              <SectionHeading eyebrow="Case management" title="Lifecycle history" />
+              {detail.statusHistory.length === 0 ? (
+                <p className="text-[12px] text-muted">No lifecycle changes recorded yet.</p>
+              ) : (
+                <ol className="space-y-3">
+                  {detail.statusHistory.map((item) => (
+                    <li key={item.id} className="border-l border-line pl-3">
+                      <p className="text-[12.5px] font-semibold">{item.to.replaceAll("_", " ")}</p>
+                      <p className="mt-0.5 text-[11px] text-muted">{item.actorName} · {formatDateTime(item.createdAt)}</p>
+                      {item.note ? <p className="mt-1 text-[12px] text-body">{item.note}</p> : null}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
           </div>
 
           <aside className="min-w-0 space-y-5 lg:sticky lg:top-6 lg:self-start">
@@ -430,7 +450,7 @@ export default async function CasePage({ params }: PageProps) {
               ) : null}
 
               <div className="mt-4 border-t border-line pt-3">
-                <CaseActions caseId={detail.id} status={detail.status} />
+                <CaseActions caseId={detail.id} status={detail.status} lifecycleStatus={detail.lifecycleStatus} />
               </div>
             </section>
 
@@ -453,6 +473,11 @@ export default async function CasePage({ params }: PageProps) {
                   ))}
                 </ol>
               </details>
+            </section>
+
+            <section className="card card-pad">
+              <SectionHeading eyebrow="Private workspace" title="Private notes" />
+              <CaseNotes caseId={detail.id} notes={detail.notes} />
             </section>
 
             <div className="rounded-xl border border-line bg-[#fbfaf5] p-4">

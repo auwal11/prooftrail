@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { SiteFooter, SiteHeader, StatusBadge } from "@/components/ui";
+import { LifecycleBadge, SiteFooter, SiteHeader } from "@/components/ui";
 import { SampleCaseButton } from "@/components/sample-case-button";
 import { listCases } from "@/lib/case-data";
 import { formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { getSessionUser } from "@/lib/session";
+import type { LifecycleStatusValue } from "@/lib/domain";
 
 export const metadata: Metadata = { title: "Cases" };
+
+type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 const SERVICE_LABEL: Record<string, string> = {
   AIRTIME: "Airtime",
@@ -16,11 +19,17 @@ const SERVICE_LABEL: Record<string, string> = {
   OTHER: "Other service",
 };
 
-export default async function CasesPage() {
+export default async function CasesPage({ searchParams }: PageProps) {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const cases = await listCases(user.id);
+  const params = await searchParams;
+  const value = (key: string) => (Array.isArray(params[key]) ? params[key]?.[0] : params[key]) ?? "";
+  const query = value("q");
+  const lifecycleStatus = value("status");
+  const serviceType = value("service");
+  const sort = (value("sort") || "newest") as "newest" | "oldest" | "amount" | "updated";
+  const cases = await listCases(user.id, { query, lifecycleStatus, serviceType, sort });
   const evidenceCount = cases.reduce((sum, item) => sum + item.evidenceCount, 0);
   const factCount = cases.reduce((sum, item) => sum + item.factCount, 0);
 
@@ -64,7 +73,33 @@ export default async function CasesPage() {
           </div>
         ) : null}
 
-        <div className="mt-10">
+        <form className="mt-8 grid gap-2 rounded-xl border border-line bg-card p-3 sm:grid-cols-[minmax(0,1fr)_180px_150px_150px_auto]" method="get">
+          <input name="q" defaultValue={query} className="input" placeholder="Search title, provider, or reference" aria-label="Search cases" />
+          <select name="status" defaultValue={lifecycleStatus} className="input" aria-label="Filter by lifecycle status">
+            <option value="">All lifecycle statuses</option>
+            {(["DRAFT", "COLLECTING_EVIDENCE", "UNDER_REVIEW", "REPORT_READY", "SUBMITTED_TO_PROVIDER", "AWAITING_RESPONSE", "RESOLVED", "CLOSED"] as LifecycleStatusValue[]).map((status) => (
+              <option key={status} value={status}>{status.replaceAll("_", " ")}</option>
+            ))}
+          </select>
+          <select name="service" defaultValue={serviceType} className="input" aria-label="Filter by service type">
+            <option value="">All services</option>
+            <option value="AIRTIME">Airtime</option>
+            <option value="DATA">Data</option>
+            <option value="OTHER">Other</option>
+          </select>
+          <select name="sort" defaultValue={sort} className="input" aria-label="Sort cases">
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="updated">Last updated</option>
+            <option value="amount">Amount</option>
+          </select>
+          <div className="flex gap-2">
+            <button className="btn btn-primary btn-sm" type="submit">Filter</button>
+            <Link href="/cases" className="btn btn-outline btn-sm">Clear</Link>
+          </div>
+        </form>
+
+        <div className="mt-6">
           {cases.length === 0 ? (
             <div className="card card-pad mx-auto max-w-2xl">
               <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-brand-dark">
@@ -132,7 +167,7 @@ export default async function CasesPage() {
                         {item.title}
                       </h2>
                     </div>
-                    <StatusBadge status={item.status} />
+                    <LifecycleBadge status={item.lifecycleStatus} />
                   </div>
 
                   <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-muted">
