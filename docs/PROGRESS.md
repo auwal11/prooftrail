@@ -26,6 +26,30 @@ This increment intentionally does not claim the remaining ProofTrail upgrade ite
 (share packs, CSV export, Hausa explanations, guided interview, photo guidance,
 and automatic checklist progression) as complete.
 
+## LauPay integration API increment — 2026-11-23
+
+- Added a reusable `IntegrationPartner` tenant model linked to an owning
+  ProofTrail account, with scopes, active/revoked state, encrypted HMAC secret,
+  and hashed API-key lookup.
+- Added signed API routes for dispute creation, tenant-scoped status retrieval,
+  and authorized evidence upload. Evidence uses the existing private storage,
+  SHA-256, duplicate detection, and extraction pipeline.
+- Added idempotency records for dispute creation and evidence uploads, including
+  payload-hash conflict detection.
+- Added source/provenance fields for integration-created cases and evidence.
+- Added outbound delivery records, HMAC-signed webhook delivery, exponential
+  retry state, and a protected internal delivery runner.
+- Added secure partner provisioning script and integration documentation in
+  `docs/LAUPAY_INTEGRATION.md` and `docs/INTEGRATION_ARCHITECTURE.md`.
+- Verification: Prisma schema validation, typecheck, lint, 40 tests in 10 files,
+  and production build all passed.
+
+The integration is not yet live: production migration, encryption/delivery
+secrets, LauPay credential provisioning, a webhook URL, scheduler, and an
+authorized end-to-end sandbox verification still require deployment configuration.
+LauPay-reported transaction fields remain labeled as partner-reported and are not
+represented as independently bank-verified.
+
 ## Completed
 
 ### Foundation

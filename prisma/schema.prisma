@@ -79,6 +79,7 @@ model User {
   events    CaseEvent[]
   statusChanges CaseStatusHistory[]
   notes     CaseNote[]
+  ownedIntegrationPartners IntegrationPartner[]
 }
 
 model Session {
@@ -108,6 +109,11 @@ model Case {
   description          String?
   status               CaseStatus  @default(DRAFT)
   lifecycleStatus      LifecycleStatus @default(DRAFT)
+  integrationPartnerId String?
+  externalTransactionId String?
+  externalDisputeId String?
+  integrationRequestId String?
+  sourceSystem String?
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
 
@@ -118,9 +124,75 @@ model Case {
   reports  Report[]
   statusHistory CaseStatusHistory[]
   notes    CaseNote[]
+  integrationPartner IntegrationPartner? @relation("IntegrationPartnerCases", fields: [integrationPartnerId], references: [id])
+  integrationDeliveries IntegrationDelivery[]
 
   @@index([userId, createdAt])
   @@index([userId, lifecycleStatus, updatedAt])
+  @@index([integrationPartnerId, externalTransactionId])
+  @@unique([integrationPartnerId, externalTransactionId])
+}
+
+model IntegrationPartner {
+  id              String   @id @default(cuid())
+  ownerUserId     String
+  slug            String   @unique
+  name            String
+  apiKeyHash      String   @unique
+  secretCiphertext String
+  scopes          String[]
+  webhookUrl      String?
+  webhookSecretCiphertext String?
+  active          Boolean  @default(true)
+  revokedAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  cases           Case[] @relation("IntegrationPartnerCases")
+  idempotencyKeys IntegrationIdempotency[]
+  deliveries      IntegrationDelivery[]
+  evidence        Evidence[]
+  owner           User @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  @@index([ownerUserId])
+}
+
+model IntegrationIdempotency {
+  id           String   @id @default(cuid())
+  partnerId    String
+  operation    String
+  key          String
+  requestHash  String
+  responseJson Json
+  statusCode   Int
+  createdAt    DateTime @default(now())
+
+  partner IntegrationPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, operation, key])
+  @@index([createdAt])
+}
+
+model IntegrationDelivery {
+  id             String   @id @default(cuid())
+  partnerId      String
+  caseId         String?
+  eventId        String   @unique
+  event          String
+  payload        Json
+  status         String   @default("PENDING")
+  attemptCount   Int      @default(0)
+  responseStatus Int?
+  lastError      String?
+  nextAttemptAt  DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  partner IntegrationPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  case    Case? @relation(fields: [caseId], references: [id], onDelete: SetNull)
+
+  @@index([partnerId, status, nextAttemptAt])
+  @@index([caseId, createdAt])
 }
 
 model CaseStatusHistory {
@@ -168,14 +240,18 @@ model Evidence {
   extractedText    String?
   pageCount        Int?
   data             Bytes?
+  sourceSystem     String?
+  integrationPartnerId String?
   createdAt        DateTime         @default(now())
 
   case      Case   @relation(fields: [caseId], references: [id], onDelete: Cascade)
   uploader  User   @relation("EvidenceUploader", fields: [uploadedById], references: [id])
+  integrationPartner IntegrationPartner? @relation(fields: [integrationPartnerId], references: [id])
   facts     Fact[]
 
   @@index([caseId, createdAt])
   @@index([sha256])
+  @@index([integrationPartnerId, createdAt])
 }
 
 model Fact {

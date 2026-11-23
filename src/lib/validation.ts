@@ -63,6 +63,25 @@ export const noteSchema = z.object({
   body: z.string().trim().min(1, "Write a note before saving.").max(2000),
 });
 
+export const integrationDisputeSchema = z.object({
+  externalTransactionId: z.string().trim().min(1).max(120),
+  externalDisputeId: z.string().trim().max(120).optional(),
+  transaction: z.object({
+    amount: z.string().trim().regex(/^\d{1,12}(?:\.\d{1,2})?$/, "Amount must be a positive decimal."),
+    currency: z.literal("NGN"),
+    type: z.enum(["airtime", "data", "other"]),
+    provider: z.string().trim().max(80).optional(),
+    transactionStatus: z.string().trim().max(40).optional(),
+    transactionReference: z.string().trim().max(120).optional(),
+    transactionDate: z.string().datetime({ offset: true }).optional(),
+  }),
+  customer: z.object({ externalCustomerId: z.string().trim().min(1).max(120) }),
+  dispute: z.object({
+    reason: z.string().trim().min(1).max(300),
+    description: z.string().trim().max(2000).optional(),
+  }),
+});
+
 export const factReviewSchema = z.object({
   factIds: z
     .array(z.string().trim().min(1))

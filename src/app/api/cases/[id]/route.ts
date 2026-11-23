@@ -6,6 +6,7 @@ import { deleteStoredFile } from "@/lib/storage";
 import { ApiError, assertSameOrigin, jsonError, readJson, requireUser } from "@/lib/http";
 import { caseUpdateSchema, normalizePhone, normalizeReference } from "@/lib/validation";
 import { canTransition } from "@/lib/lifecycle";
+import { queueIntegrationEvent } from "@/lib/integration";
 
 export const runtime = "nodejs";
 
@@ -19,7 +20,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const existing = await db.case.findFirst({
       where: { id, userId: user.id },
-      select: { id: true, lifecycleStatus: true },
+      select: { id: true, lifecycleStatus: true, integrationPartnerId: true, externalTransactionId: true },
     });
     if (!existing) throw new ApiError(404, "Case not found.", "not_found");
 
@@ -75,6 +76,20 @@ export async function PATCH(request: Request, context: RouteContext) {
         summary: `Lifecycle changed to ${data.lifecycleStatus.replaceAll("_", " ").toLowerCase()}.`,
         metadata: { from: existing.lifecycleStatus, to: data.lifecycleStatus, note: data.statusNote || null },
       });
+      if (existing.integrationPartnerId) {
+        await queueIntegrationEvent({
+          partnerId: existing.integrationPartnerId,
+          caseId: id,
+          event: "dispute.status_changed",
+          payload: {
+            event: "dispute.status_changed",
+            caseId: id,
+            externalTransactionId: existing.externalTransactionId,
+            status: data.lifecycleStatus.toLowerCase(),
+            occurredAt: new Date().toISOString(),
+          },
+        });
+      }
     }
 
     await db.case.update({ where: { id }, data: update });
