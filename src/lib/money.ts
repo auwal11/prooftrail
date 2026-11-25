@@ -9,7 +9,7 @@ const MAX_MINOR = 1_000_000_000_00;
 
 export function parseAmountToMinor(raw: string, currency = "NGN"): ParsedAmount | null {
   const cleaned = raw
-    .replace(/[₦,\s]/g, "")
+    .replace(/[₦#,\s]/g, "")
     .replace(/^NGN/i, "")
     .replace(/^N(?=\d)/i, "");
 

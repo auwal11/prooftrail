@@ -117,8 +117,9 @@ function overlaps(start: number, end: number, ranges: Array<[number, number]>): 
 }
 
 function detectAmounts(page: ExtractedPage, line: Line, candidates: Candidate[]): void {
+  const surroundingContext = page.text.slice(Math.max(0, line.start - 45), Math.min(page.text.length, line.start + line.text.length + 30));
   const currency =
-    /(?<![A-Za-z0-9])(?:NGN|₦|N)(?=\s?\d)\s?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/gi;
+    /(?<![A-Za-z0-9])(?:NGN|₦|N|#)(?=\s?\d)\s?((?:\d[\d, ]*)(?:\.\d{1,2})?)/gi;
 
   const taken: Array<[number, number]> = [];
 
@@ -143,12 +144,14 @@ function detectAmounts(page: ExtractedPage, line: Line, candidates: Candidate[])
       candidates,
       raw.trim(),
       index,
-      classifyAmountRole(line.text.slice(Math.max(0, index - 60), Math.min(line.text.length, end + 60))),
+      classifyAmountRole(line.text) === "TRANSACTION"
+        ? classifyAmountRole(`${surroundingContext} ${line.text.slice(Math.max(0, index - 60), Math.min(line.text.length, end + 60))}`)
+        : classifyAmountRole(line.text),
       Math.min(0.98, 0.88 + contextBoost),
     );
   }
 
-  const labelled = /(?:amount|debited(?:\s+with)?|paid|charged)\s*[:\-]?\s*(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+\.\d{2})/gi;
+  const labelled = /(?:amount(?:\s+paid)?|cashback\s+used|bonus|debited(?:\s+with)?|paid|charged)\s*[:\-]?\s*[+\-]?(?:NGN|₦|N|#)?\s*((?:\d[\d, ]*)(?:\.\d{1,2})?)/gi;
   for (const match of line.text.matchAll(labelled)) {
     const index = match.index ?? 0;
     const value = match[1];
@@ -167,14 +170,14 @@ function detectAmounts(page: ExtractedPage, line: Line, candidates: Candidate[])
 
 function classifyAmountRole(context: string): AmountRole {
   if (/\bbalance|available balance|ledger balance|closing balance\b/i.test(context)) return "BALANCE";
-  if (/\bfee|commission|service charge\b/i.test(context)) return "FEE";
-  if (/\bcashback\b/i.test(context)) return "CASHBACK";
   if (/\bbonus|reward\b/i.test(context)) return "BONUS";
+  if (/\bcashback\b/i.test(context)) return "CASHBACK";
   if (/\bdiscount|promo(?:tion)?\b/i.test(context)) return "DISCOUNT";
   if (/\bgross\b/i.test(context)) return "GROSS";
   if (/\bnet\b/i.test(context)) return "NET";
   if (/\bcredit(?:ed)?\b/i.test(context)) return "CREDIT";
-  if (/\bdebit(?:ed)?|paid|charged\b/i.test(context)) return "DEBIT";
+  if (/\btotal debit|debit(?:ed)?|paid|charged\b/i.test(context)) return "DEBIT";
+  if (/\bfee|commission|service charge\b/i.test(context)) return "FEE";
   return "TRANSACTION";
 }
 
@@ -206,10 +209,11 @@ function addAmountCandidate(
 function detectDates(page: ExtractedPage, line: Line, candidates: Candidate[]): void {
   const patterns = [
     /\b(?:\d{4}-\d{2}-\d{2})(?:[ T]\d{1,2}:\d{2}(?::\d{2})?)?\b/g,
-    /\b(?:0?[1-9]|[12]\d|3[01])[\/\-.]\d{1,2}[\/\-.]\d{4}(?:[,\s]+\d{1,2}:\d{2}\s*(?:AM|PM)?)?/gi,
-    /\b(?:0?[1-9]|[12]\d|3[01])[\/\-.]\d{1,2}[\/\-.]\d{2}(?!\d)(?:[,\s]+\d{1,2}:\d{2}\s*(?:AM|PM)?)?/gi,
-    /\b(?:0?[1-9]|[12]\d|3[01])[\s-]+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*[,\s-]+\d{4}(?:[,\s]+\d{1,2}:\d{2}\s*(?:AM|PM)?)?/gi,
-    /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+\d{1,2}[,\s]+\d{4}(?:[,\s]+\d{1,2}:\d{2}\s*(?:AM|PM)?)?/gi,
+    /\b(?:0?[1-9]|1[0-2])[\/\-.](?:0?[1-9]|[12]\d|3[01])[\/\-.]\d{4}(?:[,\s|]+\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?(?:\s*(?:UTC|GMT|WAT|[+-]\d{2}:?\d{2}))?)?/gi,
+    /\b(?:0?[1-9]|[12]\d|3[01])[\/\-.]\d{1,2}[\/\-.]\d{4}(?:[,\s|]+\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?(?:\s*(?:UTC|GMT|WAT|[+-]\d{2}:?\d{2}))?)?/gi,
+    /\b(?:0?[1-9]|[12]\d|3[01])[\/\-.]\d{1,2}[\/\-.]\d{2}(?!\d)(?:[,\s|]+\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?(?:\s*(?:UTC|GMT|WAT|[+-]\d{2}:?\d{2}))?)?/gi,
+    /\b(?:0?[1-9]|[12]\d|3[01])(?:st|nd|rd|th)?[\s-]+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*[,\s-]+\d{4}(?:[,\s|]+\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?(?:\s*(?:UTC|GMT|WAT|[+-]\d{2}:?\d{2}))?)?/gi,
+    /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?[,\s]+\d{4}(?:[,\s|]+\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?(?:\s*(?:UTC|GMT|WAT|[+-]\d{2}:?\d{2}))?)?/gi,
   ];
 
   const seen = new Set<string>();
@@ -244,13 +248,10 @@ function detectReferences(page: ExtractedPage, line: Line, candidates: Candidate
 
   for (const match of line.text.matchAll(pattern)) {
     const value = match[1].replace(/[.,;:]+$/, "").replace(/\s+/g, "");
-    if (value.length < 6) continue;
-    if (!/\d/.test(value)) continue;
-
+    if (value.length < 6 || !/\d/.test(value)) continue;
     const index = match.index ?? 0;
     const valueStart = line.text.indexOf(match[1], index);
     if (valueStart === -1) continue;
-
     candidates.push({
       type: "REFERENCE",
       rawValue: value,
@@ -263,17 +264,63 @@ function detectReferences(page: ExtractedPage, line: Line, candidates: Candidate
       lineText: line.text,
     });
   }
-}
 
+  const wrappedLabel = /transaction\s+reference\s*[:#-]?\s*([A-Za-z0-9][A-Za-z0-9|/_-]*\|?)(?:\s+[^\d]{1,20})?\s*$/i.exec(line.text);
+  if (wrappedLabel) {
+    const afterLine = page.text.slice(line.start + line.text.length);
+    const continuation = /(?:\r?\n|\s{2,})[^\d\n]{0,20}(\d{10,})/.exec(afterLine);
+    const prefix = wrappedLabel[1].replace(/[^A-Za-z0-9|/_-]/g, "");
+    if (continuation && prefix.length >= 4 && prefix.endsWith("|")) {
+      const value = `${prefix}${continuation[1]}`;
+      candidates.push({
+        type: "REFERENCE",
+        rawValue: value,
+        normalizedValue: value.toUpperCase(),
+        confidence: 0.72,
+        start: line.start + wrappedLabel.index + wrappedLabel[0].indexOf(wrappedLabel[1]),
+        end: line.start + line.text.length + continuation.index + continuation[0].length,
+        page: page.page,
+        line: line.index,
+        lineText: `${line.text} ${continuation[0]}`,
+      });
+    }
+  }
+
+  if (/^(?:transaction\s+)?reference\s*$/i.test(line.text.trim())) {
+    const afterLine = page.text.slice(line.start + line.text.length);
+    const first = /\s*([A-Za-z0-9][A-Za-z0-9|/_-]*(?:\s*[|/]\s*[A-Za-z0-9][A-Za-z0-9|/_-]*)*)/.exec(afterLine);
+    if (first) {
+      let value = first[1].replace(/\s+/g, "");
+      if (value.endsWith("|")) {
+        const continuation = /\n\s*(\d{10,})/.exec(afterLine.slice(first.index + first[0].length));
+        if (continuation) value += continuation[1];
+      }
+      if (value.length >= 6 && /\d/.test(value)) {
+        candidates.push({
+          type: "REFERENCE",
+          rawValue: value,
+          normalizedValue: value.toUpperCase(),
+          confidence: 0.72,
+          start: line.start + line.text.length + first.index,
+          end: line.start + line.text.length + first.index + first[0].length,
+          page: page.page,
+          line: line.index,
+          lineText: `${line.text} ${first[0]}`,
+        });
+      }
+    }
+  }
+}
 function detectPhones(page: ExtractedPage, line: Line, candidates: Candidate[]): void {
-  const pattern = /(?<!\d)(?:\+?234|0)([789][01]\d{8})(?!\d)/g;
+  const pattern = /(?<!\d)(?:\+?234|0)[\s-]*([789][01](?:[\s-]?\d){8})(?!\d)/g;
 
   for (const match of line.text.matchAll(pattern)) {
     const index = match.index ?? 0;
+    const normalizedDigits = match[1].replace(/[\s-]/g, "");
     candidates.push({
       type: "PHONE",
       rawValue: match[0],
-      normalizedValue: `+234${match[1]}`,
+      normalizedValue: `+234${normalizedDigits}`,
       confidence: 0.86,
       start: line.start + index,
       end: line.start + index + match[0].length,
@@ -310,7 +357,7 @@ function detectStatus(page: ExtractedPage, line: Line, candidates: Candidate[]):
 
 function detectServiceTypes(page: ExtractedPage, line: Line, candidates: Candidate[]): void {
   const checks: Array<{ pattern: RegExp; value: string }> = [
-    { pattern: /\bairtime\b|\brecharge\b|\btop[\s-]?up\b|\btopup\b/i, value: "AIRTIME" },
+    { pattern: /\bairtime\b|\ba\s*irtime\b|\brecharge\b|\btop[\s-]?up\b|\btopup\b/i, value: "AIRTIME" },
     { pattern: /\bdata\b|\bbundle\b|\b\d+(?:\.\d+)?\s?(?:MB|GB)\b|\binternet\b/i, value: "DATA" },
   ];
 

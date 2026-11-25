@@ -91,11 +91,12 @@ export function parseDateValue(raw: string, referenceYear?: number): ParsedDate 
   const value = raw
     .trim()
     .replace(/\b(\d{1,2})(st|nd|rd|th)\b/gi, "$1")
+    .replace(/[|]/g, " ")
     .replace(/\s+/g, " ");
   if (!value) return null;
 
   const timeSuffix =
-    "(?:[,\\s]+(\\d{1,2}:\\d{2}(?::\\d{2})?\\s*(?:AM|PM)?(?:\\s*(?:UTC|GMT|WAT|[+-]\\d{2}:?\\d{2}))?))?";
+    "(?:[,\\s|]+(\\d{1,2}:\\d{2}(?::\\d{2})?\\s*(?:AM|PM)?(?:\\s*(?:UTC|GMT|WAT|[+-]\\d{2}:?\\d{2}))?))?";
 
   const isoMatch = new RegExp(`^(\\d{4})-(\\d{2})-(\\d{2})${timeSuffix}$`, "i").exec(value);
   if (isoMatch) {
@@ -118,8 +119,14 @@ export function parseDateValue(raw: string, referenceYear?: number): ParsedDate 
       year = Math.floor(base / 100) * 100 + year;
       if (year > base + 1) year -= 100;
     }
-    // Nigerian banking messages use day-first dates.
-    return buildDate(year, Number(numeric[2]) - 1, Number(numeric[1]), parseTime(numeric[4]));
+    // Nigerian banking messages use day-first dates. If the second component
+    // cannot be a month, the otherwise unambiguous value is month-first.
+    const first = Number(numeric[1]);
+    const second = Number(numeric[2]);
+    if (second > 12 && first <= 12) {
+      return buildDate(year, first - 1, second, parseTime(numeric[4]));
+    }
+    return buildDate(year, second - 1, first, parseTime(numeric[4]));
   }
 
   const dayMonthName = new RegExp(
