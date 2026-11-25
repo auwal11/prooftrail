@@ -158,4 +158,21 @@ describe("detectDiscrepancies", () => {
     });
     expect(result).toContain("MISSING_AMOUNT");
   });
+
+  it("does not call a field missing while evidence extraction is unfinished", () => {
+    const result = detectDiscrepancies({
+      caseRecord: CASE,
+      evidence: [
+        {
+          ...EVIDENCE[0],
+          extractionStatus: "PROCESSING",
+          extractedText: null,
+        },
+      ],
+      facts: [],
+    }).map((finding) => finding.code);
+
+    expect(result).not.toEqual(expect.arrayContaining(["MISSING_AMOUNT", "MISSING_DATE", "MISSING_REFERENCE"]));
+    expect(result).toContain("EXTRACTION_INCOMPLETE");
+  });
 });

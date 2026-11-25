@@ -45,6 +45,13 @@ enum ExtractionStatus {
   UNSUPPORTED
 }
 
+enum ExtractionState {
+  CONFIRMED
+  UNREADABLE
+  NOT_EXTRACTED
+  NOT_PRESENT
+}
+
 enum FactType {
   AMOUNT
   DATE
@@ -235,6 +242,7 @@ model Evidence {
   sha256           String
   kind             EvidenceKind
   extractionStatus ExtractionStatus @default(PENDING)
+  extractionState  ExtractionState  @default(NOT_EXTRACTED)
   extractionError  String?
   extractionNotes  String?
   extractedText    String?

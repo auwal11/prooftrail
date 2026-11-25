@@ -67,7 +67,14 @@ export function detectDiscrepancies(input: DiscrepancyInput): Finding[] {
   const facts = activeFacts(input.facts);
   const byType = (type: EffectiveFact["type"]) => facts.filter((fact) => fact.type === type);
 
-  const amounts = byType("AMOUNT").filter((fact) => fact.normalizedValue);
+  const amounts = byType("AMOUNT").filter(
+    (fact) =>
+      fact.normalizedValue &&
+      (!fact.locator?.semanticRole ||
+        ["TRANSACTION", "DEBIT", "CREDIT", "GROSS", "NET", "UNKNOWN"].includes(
+          fact.locator.semanticRole,
+        )),
+  );
   const dates = byType("DATE").filter((fact) => fact.normalizedValue);
   const references = byType("REFERENCE").filter((fact) => fact.normalizedValue);
   const statuses = byType("STATUS").filter((fact) => fact.normalizedValue);
@@ -124,11 +131,18 @@ export function detectDiscrepancies(input: DiscrepancyInput): Finding[] {
 
   const incomplete = input.evidence.filter(
     (item) =>
+      item.extractionStatus === "PENDING" ||
+      item.extractionStatus === "PROCESSING" ||
       item.extractionStatus === "FAILED" ||
       item.extractionStatus === "UNSUPPORTED" ||
       (item.extractionStatus === "COMPLETED" &&
         (item.extractedText ?? "").trim().length === 0),
   );
+  const extractionSettled =
+    input.evidence.length > 0 &&
+    input.evidence.every(
+      (item) => item.extractionStatus === "COMPLETED" && (item.extractedText ?? "").trim().length > 0,
+    );
 
   if (incomplete.length > 0) {
     findings.push(
@@ -177,7 +191,7 @@ export function detectDiscrepancies(input: DiscrepancyInput): Finding[] {
     );
   }
 
-  if (input.evidence.length > 0 && amounts.length === 0) {
+  if (extractionSettled && amounts.length === 0) {
     findings.push(
       makeFinding({
         code: "MISSING_AMOUNT",
@@ -239,7 +253,7 @@ export function detectDiscrepancies(input: DiscrepancyInput): Finding[] {
     }
   }
 
-  if (input.evidence.length > 0 && dates.length === 0) {
+  if (extractionSettled && dates.length === 0) {
     findings.push(
       makeFinding({
         code: "MISSING_DATE",
@@ -353,7 +367,7 @@ export function detectDiscrepancies(input: DiscrepancyInput): Finding[] {
     );
   }
 
-  if (input.evidence.length > 0 && references.length === 0) {
+  if (extractionSettled && references.length === 0) {
     findings.push(
       makeFinding({
         code: "MISSING_REFERENCE",
@@ -444,7 +458,7 @@ export function detectDiscrepancies(input: DiscrepancyInput): Finding[] {
     );
   }
 
-  if (input.evidence.length > 0 && statuses.length === 0) {
+  if (extractionSettled && statuses.length === 0) {
     findings.push(
       makeFinding({
         code: "MISSING_STATUS",

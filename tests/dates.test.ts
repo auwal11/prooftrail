@@ -22,6 +22,7 @@ describe("parseDateValue", () => {
   it("parses named months and date-only values", () => {
     expect(parseDateValue("20 October 2026")?.iso).toBe("2026-10-20");
     expect(parseDateValue("October 20, 2026")?.iso).toBe("2026-10-20");
+    expect(parseDateValue("20th October 2026 8:05 PM WAT")?.iso).toBe("2026-10-20T20:05");
   });
 
   it("rejects impossible and out-of-range dates", () => {

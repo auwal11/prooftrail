@@ -37,7 +37,12 @@ export async function processEvidence(evidenceId: string): Promise<{
 
     await db.evidence.update({
       where: { id: evidenceId },
-      data: { extractionStatus: "PROCESSING", extractionError: null, extractionNotes: null },
+      data: {
+        extractionStatus: "PROCESSING",
+        extractionState: "NOT_EXTRACTED",
+        extractionError: null,
+        extractionNotes: null,
+      },
     });
 
     let buffer: Buffer;
@@ -78,6 +83,7 @@ export async function processEvidence(evidenceId: string): Promise<{
           where: { id: evidenceId },
           data: {
             extractionStatus: "COMPLETED",
+            extractionState: facts.length > 0 ? "CONFIRMED" : extraction.text.trim() ? "NOT_PRESENT" : "UNREADABLE",
             extractionError: null,
             extractionNotes: notes,
             extractedText: extraction.text.slice(0, 500_000),
@@ -129,6 +135,7 @@ async function markFailed(evidenceId: string, message: string): Promise<void> {
       where: { id: evidenceId },
       data: {
         extractionStatus: "FAILED",
+        extractionState: "UNREADABLE",
         extractionError: message.slice(0, 500),
       },
     })

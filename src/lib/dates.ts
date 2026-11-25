@@ -68,7 +68,7 @@ function buildDate(
 function parseTime(value: string | undefined): { hours: number; minutes: number } | undefined {
   if (!value) return undefined;
   const trimmed = value.trim();
-  const match = /^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i.exec(trimmed);
+  const match = /^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?(?:\s*(?:UTC|GMT|WAT|[+-]\d{2}:?\d{2}))?$/i.exec(trimmed);
   if (!match) return undefined;
 
   let hours = Number(match[1]);
@@ -88,11 +88,14 @@ function parseTime(value: string | undefined): { hours: number; minutes: number 
 }
 
 export function parseDateValue(raw: string, referenceYear?: number): ParsedDate | null {
-  const value = raw.trim().replace(/\s+/g, " ");
+  const value = raw
+    .trim()
+    .replace(/\b(\d{1,2})(st|nd|rd|th)\b/gi, "$1")
+    .replace(/\s+/g, " ");
   if (!value) return null;
 
   const timeSuffix =
-    "(?:[,\\s]+(\\d{1,2}:\\d{2}\\s*(?:AM|PM)?))?";
+    "(?:[,\\s]+(\\d{1,2}:\\d{2}(?::\\d{2})?\\s*(?:AM|PM)?(?:\\s*(?:UTC|GMT|WAT|[+-]\\d{2}:?\\d{2}))?))?";
 
   const isoMatch = new RegExp(`^(\\d{4})-(\\d{2})-(\\d{2})${timeSuffix}$`, "i").exec(value);
   if (isoMatch) {

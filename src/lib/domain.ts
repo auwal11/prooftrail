@@ -16,6 +16,7 @@ export type ExtractionStatusValue =
   | "COMPLETED"
   | "FAILED"
   | "UNSUPPORTED";
+export type ExtractionStateValue = "CONFIRMED" | "UNREADABLE" | "NOT_EXTRACTED" | "NOT_PRESENT";
 export type FactTypeValue =
   | "AMOUNT"
   | "DATE"
@@ -27,6 +28,18 @@ export type FactTypeValue =
   | "RECIPIENT"
   | "ACCOUNT_MASK"
   | "DESCRIPTION";
+export type AmountRole =
+  | "TRANSACTION"
+  | "DEBIT"
+  | "CREDIT"
+  | "FEE"
+  | "BALANCE"
+  | "CASHBACK"
+  | "BONUS"
+  | "DISCOUNT"
+  | "GROSS"
+  | "NET"
+  | "UNKNOWN";
 export type RevisionActionValue = "CORRECT" | "REJECT" | "RESTORE";
 
 export type BBox = { x: number; y: number; w: number; h: number };
@@ -41,6 +54,8 @@ export type SourceLocator = {
   units?: "pt" | "px" | "chars";
   pageWidth?: number;
   pageHeight?: number;
+  /** Semantic interpretation retained in JSON provenance for backward compatibility. */
+  semanticRole?: AmountRole;
 };
 
 export type EvidenceView = {
@@ -51,6 +66,7 @@ export type EvidenceView = {
   sizeBytes: number;
   sha256: string;
   extractionStatus: ExtractionStatusValue;
+  extractionState?: ExtractionStateValue;
   extractionError: string | null;
   extractionNotes: string | null;
   pageCount: number | null;

@@ -32,7 +32,9 @@ describe("extractFactsFromPages", () => {
       facts.filter((fact) => fact.type === type).map((fact) => fact.normalizedValue);
 
     expect(values("AMOUNT")).toContain("NGN 1,000.00");
-    expect(values("AMOUNT")).not.toContain("NGN 5,432.10");
+    expect(
+      facts.find((fact) => fact.normalizedValue === "NGN 5,432.10")?.locator.semanticRole,
+    ).toBe("BALANCE");
     expect(values("DATE")).toContain("2026-10-20T12:34");
     expect(values("REFERENCE")).toContain("202610201234567890");
     expect(values("PHONE")).toContain("+2348031234567");
@@ -51,7 +53,7 @@ describe("extractFactsFromPages", () => {
       expect(fact.locator.charEnd).toBeGreaterThan(fact.locator.charStart);
       expect(fact.snippet.length).toBeGreaterThan(0);
       expect(fact.extractor).toBe("prooftrail-ng-alert-rules");
-      expect(fact.extractorVersion).toBe("1.0.0");
+      expect(fact.extractorVersion).toBe("2.0.0");
     }
   });
 
@@ -69,5 +71,26 @@ describe("extractFactsFromPages", () => {
   it("does not invent facts from unrelated text", () => {
     const facts = extractFactsFromPages([page("Hello, this is a plain note with no transaction.")]);
     expect(facts).toHaveLength(0);
+  });
+
+  it("keeps balance and fee amounts traceable without treating them as the transaction amount", () => {
+    const facts = extractFactsFromPages([
+      page("Amount Paid: NGN 2,500.00\nFee: NGN 10.00\nAvailable Balance: NGN 8,490.00"),
+    ]);
+    const amounts = facts.filter((fact) => fact.type === "AMOUNT");
+    expect(amounts.map((fact) => fact.normalizedValue)).toEqual(
+      expect.arrayContaining(["NGN 2,500.00", "NGN 10.00", "NGN 8,490.00"]),
+    );
+    expect(amounts.find((fact) => fact.normalizedValue === "NGN 8,490.00")?.locator.semanticRole).toBe(
+      "BALANCE",
+    );
+    expect(amounts.find((fact) => fact.normalizedValue === "NGN 10.00")?.locator.semanticRole).toBe("FEE");
+  });
+
+  it("reconstructs pipe-separated reference identifiers", () => {
+    const facts = extractFactsFromPages([page("Transaction Reference: ABC123456 | RRN987654321")]);
+    expect(facts.filter((fact) => fact.type === "REFERENCE").map((fact) => fact.normalizedValue)).toContain(
+      "ABC123456|RRN987654321",
+    );
   });
 });

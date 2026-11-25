@@ -1,10 +1,10 @@
-import type { FactTypeValue, SourceLocator } from "@/lib/domain";
+import type { AmountRole, FactTypeValue, SourceLocator } from "@/lib/domain";
 import { parseDateValue } from "@/lib/dates";
 import { parseAmountToMinor } from "@/lib/money";
 import type { ExtractedPage } from "@/lib/extract/types";
 
 export const EXTRACTOR_NAME = "prooftrail-ng-alert-rules";
-export const EXTRACTOR_VERSION = "1.0.0";
+export const EXTRACTOR_VERSION = "2.0.0";
 
 const MAX_FACTS = 300;
 const MAX_SNIPPET = 280;
@@ -30,6 +30,7 @@ type Candidate = {
   page: number;
   line: number;
   lineText: string;
+  semanticRole?: AmountRole;
 };
 
 type Line = { text: string; start: number; index: number };
@@ -124,9 +125,6 @@ function detectAmounts(page: ExtractedPage, line: Line, candidates: Candidate[])
   for (const match of line.text.matchAll(currency)) {
     const index = match.index ?? 0;
     const raw = match[0];
-    const before = line.text.slice(Math.max(0, index - 40), index);
-    if (/\bbalance\b[^0-9]{0,25}$/i.test(before)) continue;
-
     const parsed = parseAmountToMinor(raw);
     if (!parsed) continue;
 
@@ -139,17 +137,15 @@ function detectAmounts(page: ExtractedPage, line: Line, candidates: Candidate[])
       ? 0.05
       : 0;
 
-    candidates.push({
-      type: "AMOUNT",
-      rawValue: raw.trim(),
-      normalizedValue: parsed.normalized,
-      confidence: Math.min(0.98, 0.88 + contextBoost),
-      start: line.start + index,
-      end: line.start + end,
-      page: page.page,
-      line: line.index,
-      lineText: line.text,
-    });
+    addAmountCandidate(
+      page,
+      line,
+      candidates,
+      raw.trim(),
+      index,
+      classifyAmountRole(line.text.slice(Math.max(0, index - 60), Math.min(line.text.length, end + 60))),
+      Math.min(0.98, 0.88 + contextBoost),
+    );
   }
 
   const labelled = /(?:amount|debited(?:\s+with)?|paid|charged)\s*[:\-]?\s*(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+\.\d{2})/gi;
@@ -165,18 +161,46 @@ function detectAmounts(page: ExtractedPage, line: Line, candidates: Candidate[])
     if (!parsed) continue;
     taken.push([valueStart, valueEnd]);
 
-    candidates.push({
-      type: "AMOUNT",
-      rawValue: value,
-      normalizedValue: parsed.normalized,
-      confidence: 0.74,
-      start: line.start + valueStart,
-      end: line.start + valueEnd,
-      page: page.page,
-      line: line.index,
-      lineText: line.text,
-    });
+    addAmountCandidate(page, line, candidates, value, valueStart, classifyAmountRole(line.text), 0.78);
   }
+}
+
+function classifyAmountRole(context: string): AmountRole {
+  if (/\bbalance|available balance|ledger balance|closing balance\b/i.test(context)) return "BALANCE";
+  if (/\bfee|commission|service charge\b/i.test(context)) return "FEE";
+  if (/\bcashback\b/i.test(context)) return "CASHBACK";
+  if (/\bbonus|reward\b/i.test(context)) return "BONUS";
+  if (/\bdiscount|promo(?:tion)?\b/i.test(context)) return "DISCOUNT";
+  if (/\bgross\b/i.test(context)) return "GROSS";
+  if (/\bnet\b/i.test(context)) return "NET";
+  if (/\bcredit(?:ed)?\b/i.test(context)) return "CREDIT";
+  if (/\bdebit(?:ed)?|paid|charged\b/i.test(context)) return "DEBIT";
+  return "TRANSACTION";
+}
+
+function addAmountCandidate(
+  page: ExtractedPage,
+  line: Line,
+  candidates: Candidate[],
+  rawValue: string,
+  index: number,
+  semanticRole: AmountRole,
+  confidence: number,
+): void {
+  const parsed = parseAmountToMinor(rawValue);
+  if (!parsed) return;
+  candidates.push({
+    type: "AMOUNT",
+    rawValue,
+    normalizedValue: parsed.normalized,
+    confidence,
+    start: line.start + index,
+    end: line.start + index + rawValue.length,
+    page: page.page,
+    line: line.index,
+    lineText: line.text,
+    semanticRole,
+  });
 }
 
 function detectDates(page: ExtractedPage, line: Line, candidates: Candidate[]): void {
@@ -216,10 +240,10 @@ function detectDates(page: ExtractedPage, line: Line, candidates: Candidate[]): 
 
 function detectReferences(page: ExtractedPage, line: Line, candidates: Candidate[]): void {
   const pattern =
-    /(?:transaction\s*(?:reference|ref|id|no\.?)|trx\s*(?:ref(?:erence)?|id|no\.?)?|txn\s*(?:ref(?:erence)?|id|no\.?)?|ref(?:erence)?(?:\s*(?:no\.?|number|id))?|session\s*id|rrn|order\s*(?:id|no\.?)|payment\s*(?:reference|ref)|approval\s*code|auth(?:orization)?\s*code)\s*[:#\-]?\s*([A-Za-z0-9][A-Za-z0-9._\/-]{4,40})/gi;
+    /(?:transaction\s*(?:reference|ref|id|no\.?)|trx\s*(?:ref(?:erence)?|id|no\.?)?|txn\s*(?:ref(?:erence)?|id|no\.?)?|ref(?:erence)?(?:\s*(?:no\.?|number|id))?|session\s*id|rrn|order\s*(?:id|no\.?)|payment\s*(?:reference|ref)|approval\s*code|auth(?:orization)?\s*code)\s*[:#\-]?\s*([A-Za-z0-9][A-Za-z0-9._\/-]*(?:\s*[|/]\s*[A-Za-z0-9][A-Za-z0-9._\/-]*)?)/gi;
 
   for (const match of line.text.matchAll(pattern)) {
-    const value = match[1].replace(/[.,;:]+$/, "");
+    const value = match[1].replace(/[.,;:]+$/, "").replace(/\s+/g, "");
     if (value.length < 6) continue;
     if (!/\d/.test(value)) continue;
 
@@ -469,12 +493,15 @@ export function extractFactsFromPages(pages: ExtractedPage[]): NewFact[] {
       rawValue: candidate.rawValue.slice(0, 200),
       normalizedValue: candidate.normalizedValue?.slice(0, 200) ?? null,
       confidence: Math.round(candidate.confidence * 100) / 100,
-      locator: locatorFor(
-        pages.find((page) => page.page === candidate.page)!,
-        candidate.start,
-        candidate.end,
-        candidate.line,
-      ),
+      locator: {
+        ...locatorFor(
+          pages.find((page) => page.page === candidate.page)!,
+          candidate.start,
+          candidate.end,
+          candidate.line,
+        ),
+        ...(candidate.semanticRole ? { semanticRole: candidate.semanticRole } : {}),
+      },
       snippet: snippetAround(candidate.lineText, candidate.start - lineStartFor(pages, candidate.page, candidate.line), candidate.end - lineStartFor(pages, candidate.page, candidate.line)),
       extractor: EXTRACTOR_NAME,
       extractorVersion: EXTRACTOR_VERSION,

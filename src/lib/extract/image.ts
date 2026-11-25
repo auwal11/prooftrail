@@ -29,6 +29,8 @@ type OcrPage = {
   confidence: number;
 };
 
+type OcrPass = OcrPage & { mode: number };
+
 export async function extractImage(buffer: Buffer): Promise<ExtractionResult> {
   const cachePath = ocrCacheDir();
   await mkdir(cachePath, { recursive: true, mode: 0o700 });
@@ -55,8 +57,21 @@ export async function extractImage(buffer: Buffer): Promise<ExtractionResult> {
         gzip: true,
         logger: () => undefined,
       })) as unknown as OcrWorker;
-      const { data } = await holder.worker.recognize(buffer, {}, { text: true, blocks: true });
-      return data as unknown as OcrPage;
+      const passes: OcrPass[] = [];
+      for (const mode of [6, 11]) {
+        const { data } = await holder.worker.recognize(
+          buffer,
+          { tessedit_pageseg_mode: mode },
+          { text: true, blocks: true },
+        );
+        passes.push({ ...(data as OcrPage), mode });
+      }
+      return passes.sort((a, b) => scoreOcrPass(b) - scoreOcrPass(a))[0] ?? {
+        text: "",
+        confidence: 0,
+        blocks: null,
+        mode: 6,
+      };
     })();
 
     const data = await Promise.race([run, timeout]);
@@ -83,8 +98,13 @@ export async function extractImage(buffer: Buffer): Promise<ExtractionResult> {
       pages: [page],
       text: page.text,
       pageCount: 1,
-      engine: "tesseract-ocr",
-      warnings,
+      engine: "tesseract-ocr-retry",
+      warnings: [
+        ...("mode" in data && data.mode !== 6
+          ? [`OCR selected alternate layout recognition mode ${data.mode}.`]
+          : []),
+        ...warnings,
+      ],
     };
   } catch (error) {
     if (error instanceof ExtractionError) throw error;
@@ -103,6 +123,13 @@ export async function extractImage(buffer: Buffer): Promise<ExtractionResult> {
     }
     if (timer) clearTimeout(timer);
   }
+}
+
+function scoreOcrPass(data: OcrPage): number {
+  const text = (data.text ?? "").trim();
+  const confidence = Number.isFinite(data.confidence) ? data.confidence : 0;
+  const structured = (text.match(/\b(?:amount|date|reference|status|debit|credit|transaction)\b/gi) ?? []).length;
+  return confidence + Math.min(text.length, 400) / 40 + structured * 3;
 }
 
 function buildPage(data: OcrPage): ExtractedPage {

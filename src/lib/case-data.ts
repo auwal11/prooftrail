@@ -79,6 +79,7 @@ function toEvidenceViews(caseRecord: CaseRecord): EvidenceView[] {
     sizeBytes: evidence.sizeBytes,
     sha256: evidence.sha256,
     extractionStatus: evidence.extractionStatus,
+    extractionState: evidence.extractionState,
     extractionError: evidence.extractionError,
     extractionNotes: evidence.extractionNotes,
     pageCount: evidence.pageCount,
